@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package «final_project_template» {
+package «AugmentationIdeals» {
   -- add any package configuration options here
 }
 
