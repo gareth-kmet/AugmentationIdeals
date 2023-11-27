@@ -1,4 +1,4 @@
-import Mathlib
+import Mathlib -- #TODO Reduce
 
 
 /-!
@@ -15,6 +15,8 @@ import Mathlib
 
   #TODO change this to be a group and a ring
 
+
+  Author : Gareth Kmet 2023
 -/
 
 open BigOperators
@@ -248,7 +250,6 @@ lemma mul_def'' : f * g = ∑ a₁ in f.support, ∑ a₂ in g.support, MonoidAl
   rw[MonoidAlgebra.mul_def] ; unfold Finsupp.sum
   dsimp only
 
-@[deprecated]
 def mul_g' (a : G) : MonoidAlgebra R G where
   support := ((fun x => a * x⁻¹) '' g.support).toFinset
   toFun u := g (u⁻¹ * a)
@@ -335,9 +336,9 @@ lemma single_mul_in_gsupport_is_gmul (ha₂ : a₂ ∈ gsupport_finset g a₁ a)
   obtain ⟨_, ha₂'⟩ := ha₂ ; rw [ha₂']
   rw [←ha₂'] ; group
 
-lemma gsupport_gives_same_mul : (∑ a₁ in f.support, (∑ a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂))) a = (∑ a₁ in f.support, (∑ a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single a (f a₁ * g (a₁⁻¹ * a)))) a := by
+lemma gsupport_gives_same_mul : (∑ a₁ in f.support, (∑ a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂))) a = (∑ a₁ in f.support, (∑ _a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single a (f a₁ * g (a₁⁻¹ * a)))) a := by
   rw [of_sum_sum_is_sum_sum_of,of_sum_sum_is_sum_sum_of]
-  suffices ∀ a₁ ∈ f.support, (∑ a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂) a) = (∑ a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single a (f a₁ * g (a₁⁻¹ * a)) a) by
+  suffices ∀ a₁ ∈ f.support, (∑ a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂) a) = (∑ _a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single a (f a₁ * g (a₁⁻¹ * a)) a) by
     exact Finset.sum_congr rfl this
   intro a₁ _
   suffices ∀ a₂ ∈ (gsupport_finset g a₁ a), MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂) a = MonoidAlgebra.single a (f a₁ * mul_g' g a a₁) a by
@@ -349,7 +350,7 @@ lemma sum_of_singles_of_x_at_x_is_sum_of_coeficients (α₁: Finset G) (α₂ : 
   rw [of_sum_sum_is_sum_sum_of]
   conv => enter [1, 2, a₁, 2, a₂] ; rw [Finsupp.single_eq_same]
 
-lemma sum_of_singles_of_a_at_a_is_sum_of_scalar_of_coeficients : (∑ a₁ in f.support, (∑ a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single a (f a₁ * g (a₁⁻¹ * a)))) a = ∑ a₁ in f.support, Finset.card (gsupport_finset g a₁ a) * (f a₁ * g (a₁⁻¹ * a)) := by
+lemma sum_of_singles_of_a_at_a_is_sum_of_scalar_of_coeficients : (∑ a₁ in f.support, (∑ _a₂ in (gsupport_finset g a₁ a), MonoidAlgebra.single a (f a₁ * g (a₁⁻¹ * a)))) a = ∑ a₁ in f.support, Finset.card (gsupport_finset g a₁ a) * (f a₁ * g (a₁⁻¹ * a)) := by
   rw [sum_of_singles_of_x_at_x_is_sum_of_coeficients]
   simp only [Finset.sum_const, nsmul_eq_mul]
 
@@ -571,6 +572,7 @@ theorem mul_coeffients_is_mul_hom (f g : MonoidAlgebra R G): ∑ a in (f * g).su
 
 end calculations
 
+variable (R G) in
 def ε : (MonoidAlgebra R G) →+* R where
   toFun := by intro f ; exact ∑ a in ↑f.support, (f : G →₀ R) a
   map_mul' _ _ := mul_coeffients_is_mul_hom _ _
