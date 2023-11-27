@@ -250,7 +250,7 @@ lemma mul_def'' : f * g = ∑ a₁ in f.support, ∑ a₂ in g.support, MonoidAl
   rw[MonoidAlgebra.mul_def] ; unfold Finsupp.sum
   dsimp only
 
-def mul_g' (a : G) : MonoidAlgebra R G where
+def mul_g' (a : G) : MonoidAlgebra R G where -- #TODO remove (used in one two lemmas as a place holder)
   support := ((fun x => a * x⁻¹) '' g.support).toFinset
   toFun u := g (u⁻¹ * a)
   mem_support_toFun := by
@@ -262,9 +262,6 @@ def mul_g' (a : G) : MonoidAlgebra R G where
       rw [←hx₂] ; exact hx₁
     · intro hu ; use u⁻¹ * a
       constructor ; exact hu ; group
-
-
-variable [NoZeroDivisors R] --TODO Remove
 
 lemma single_of_mul_is_non_zero_when_mul_is_single (ha₁ : a₁ ∈ f.support) (ha₂ : a₂ ∈ g.support) : MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂) a ≠ 0 ↔ a₁ * a₂ = a := by
   constructor
@@ -388,6 +385,9 @@ lemma mul_inner_sum_unecessary: Finset.card (gsupport_finset g a₁ a) * (f a₁
   · rw [Finsupp.not_mem_support_iff] at h
     rw [h] ; group
 
+/-
+  The main definition of multiplication for the ring group
+-/
 theorem mul_def' : (f * g) a = ∑ a₁ in f.support, f a₁ * g (a₁⁻¹ * a) := by
   rw [mul_def'', sum_gsupport_is_sum_gsupport, gsupport_gives_same_mul, sum_of_singles_of_a_at_a_is_sum_of_scalar_of_coeficients]
   conv => enter [1, 2, a₁] ; rw [mul_inner_sum_unecessary]
@@ -571,11 +571,12 @@ theorem mul_coeffients_is_mul_hom (f g : MonoidAlgebra R G): ∑ a in (f * g).su
   rw[finset_is_finset_union_support, support_is_finset_union_support]
 
 end calculations
+end AugmentationIdeal.AugmentationMap
 
-variable (R G) in
-def ε : (MonoidAlgebra R G) →+* R where
+variable (R G) [CommGroup G] [CommRing R] [NoZeroDivisors R] in
+def AugmentationIdeal.AugmentationMap : (MonoidAlgebra R G) →+* R where
   toFun := by intro f ; exact ∑ a in ↑f.support, (f : G →₀ R) a
-  map_mul' _ _ := mul_coeffients_is_mul_hom _ _
+  map_mul' _ _ := AugmentationMap.mul_coeffients_is_mul_hom _ _
   map_zero' := by dsimp
   map_one' := by
     rw [MonoidAlgebra.one_def, MonoidAlgebra.single]
@@ -587,5 +588,3 @@ def ε : (MonoidAlgebra R G) →+* R where
       · rw [@ne_eq] ; exact h
   map_add' := by
     dsimp ; intro (f : G →₀ R) (g : G →₀ R) ; rw[Finsupp.sum_coefficents_is_add_hom]
-
-end AugmentationIdeal.AugmentationMap
