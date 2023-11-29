@@ -161,6 +161,14 @@ lemma sum_of_funct_is_sum_over_image'₂ (β : Finset G) (γ : G → R) (φ ψ :
   intro x _ y _ hxy
   apply h ; assumption
 
+lemma sum_of_funct_is_sum_over_image'' (β : Finset G) (γ : G → R) (φ : G → G) (h : ∀ x₁ ∈ β, ∀ x₂ ∈ β, φ x₁ = φ x₂ → x₁ = x₂) : ∑ a : β, γ (φ a) = ∑ b : (φ '' β).toFinset, γ b := by
+  simp only [univ_eq_attach,@sum_attach, Set.toFinset_image, toFinset_coe]
+  rw [sum_image, ← @sum_coe_sort_eq_attach]
+  refine (sum_subtype β ?_ fun a => γ (φ a)).symm
+  simp only [implies_true]
+  assumption
+
+
 variable [CommRing R]
 
 lemma sum_mul_sum_is_sum_sum_mul (α β : Finset G) (φ ψ : G → R) : (∑ a in α, ψ a) * (∑ b in β, φ b) = ∑ a in α, ∑ b in β, ψ a * φ b := by
