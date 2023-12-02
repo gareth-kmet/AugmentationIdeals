@@ -176,7 +176,7 @@ lemma coe_iff (a : Δ R,G) (b : MonoidAlgebra R G) (h : b ∈ Δ R,G) : a = ⟨b
     simp only [Subtype.mk.injEq, imp_self]
   · exact fun a_1 => SetCoe.ext a_1
 
-def basis_spans_top_set : ⊤ ≤ Submodule.span R (Set.range (basis_def R G)) := by
+theorem spans_top_set : ⊤ ≤ Submodule.span R (Set.range (basis_def R G)) := by
   rw [@SetLike.le_def]
   rintro ⟨x, hx⟩ _
   rw [mem_span_set']
@@ -197,10 +197,7 @@ def basis_spans_top_set : ⊤ ≤ Submodule.span R (Set.range (basis_def R G)) :
     rw [coe_iff, ←mem_is_linearcomb_of_basis x hx]
   · intros ; rfl
 
-example (α : Finset G) (f : G → R) : (∀ a ∈ α, f a = 0) → ∑ a in α, f a = 0 := by
-  exact fun a => Finset.sum_eq_zero a
-
-def basis_linear_independent : LinearIndependent R (basis_def R G) := by
+theorem linear_independent : LinearIndependent R (basis_def R G) := by
   rw [@linearIndependent_iff']
   intro s f h
   rw [@Subtype.ext_iff, @Submodule.coe_sum] at h
@@ -254,9 +251,146 @@ def basis_linear_independent : LinearIndependent R (basis_def R G) := by
     rw [@Subtype.ext_iff]
     exact id hj'.symm
 
-
-def basis : Basis {g : G | g ≠ 1} R (Δ R,G) := Basis.mk basis_linear_independent basis_spans_top_set
-
 end Basis
+
+instance basis : Basis {g : G | g ≠ 1} R (Δ R,G) := Basis.mk Basis.linear_independent Basis.spans_top_set
+
+@[simp]
+lemma mul_distrib (f₁ f₂ g₁ g₂ : G) (r₁ r₂ r₃ r₄ : R) : (MonoidAlgebra.single f₁ r₁ + MonoidAlgebra.single f₂ r₂) * (MonoidAlgebra.single g₁ r₃ + MonoidAlgebra.single g₂ r₄) =
+    (MonoidAlgebra.single (f₁*g₁) (r₁*r₃)) + (MonoidAlgebra.single (f₁*g₂) (r₁*r₄)) + (MonoidAlgebra.single (f₂*g₁) (r₂*r₃)) + (MonoidAlgebra.single (f₂*g₂) (r₂*r₄)) := by
+  group ; simp only [MonoidAlgebra.single_mul_single, mul_comm]
+
+@[simp]
+lemma sub_distrib (g : G) (f : MonoidAlgebra R G) (r : R) : f - MonoidAlgebra.single g r = f + MonoidAlgebra.single g (-r) := by
+  simp [sub_eq_iff_eq_add']
+
+@[simp]
+lemma mul_distrib_of_basis (f g : G) : (MonoidAlgebra.single f (1:R) - 1) * (MonoidAlgebra.single g (1:R) - 1) =
+    (MonoidAlgebra.single (f*g) (1:R)) - (MonoidAlgebra.single f (1:R)) - (MonoidAlgebra.single g (1:R)) + 1 := by
+  dsimp [MonoidAlgebra.one_def]
+  simp only [sub_distrib, mul_distrib]
+  group
+
+
+namespace Cyclic
+
+open BigOperators
+
+variable [hG : IsCyclic G] {R G}
+
+def gen : G := Classical.choose hG.exists_generator
+
+
+lemma gen_def : ∀ x : G, x ∈ Subgroup.zpowers gen := by
+  exact Classical.choose_spec hG.exists_generator
+
+lemma gen_is_top : (Subgroup.zpowers (G:=G) gen) = ⊤ := by
+  rw [←top_le_iff]
+  rw [@SetLike.le_def]
+  exact fun ⦃x⦄ _ => gen_def x
+
+def gen_pow_exists (g : G) : ∃ z : ℤ, g = gen ^ z := by
+  apply Subgroup.exists_mem_zpowers.mp
+  simp only [exists_eq_right']
+  exact gen_def g
+
+def gen_pow : G → ℤ :=
+  fun g => Classical.choose <| gen_pow_exists g
+
+lemma gen_pow_def (g : G) : gen ^ (gen_pow g) = g := by
+  dsimp [gen_pow]
+  rw[←Classical.choose_spec <| gen_pow_exists g]
+
+lemma expand_basis_of_power_nat (g : G) (n : ℕ) : (MonoidAlgebra.single (g ^ n) (1:R) - 1) =
+    (∑ i : Fin n, MonoidAlgebra.single (g ^ (i:ℕ)) (1:R)) * (MonoidAlgebra.single g (1:R) - 1):= by
+  induction n with
+  | zero => simp [MonoidAlgebra.one_def]
+  | succ n ih =>
+    rw [MonoidAlgebra.one_def]
+    apply symm
+    calc (∑ i : Fin (Nat.succ n), MonoidAlgebra.single (g ^ (i:ℕ)) (1:R)) * (MonoidAlgebra.single g (1:R) - 1)
+      _ = (MonoidAlgebra.single (g ^ n) (1:R) + ∑ i : Fin n, MonoidAlgebra.single (g ^ (i:ℕ)) (1:R)) *  (MonoidAlgebra.single g (1:R) - 1) := by
+        rw [show Nat.succ n = n + 1 from rfl, Fin.sum_univ_add]
+        simp ; ring
+      _ = (MonoidAlgebra.single (g ^ n) (1:R) * (MonoidAlgebra.single g (1:R) - 1)) +
+          (∑ i : Fin n, MonoidAlgebra.single (g ^ (i:ℕ)) (1:R)) *  (MonoidAlgebra.single g (1:R) - 1) := by ring
+      _ = (MonoidAlgebra.single (g ^ n) (1:R) * (MonoidAlgebra.single g (1:R) - 1)) + (MonoidAlgebra.single (g ^ n) (1:R) - 1) := by rw[ih]
+      _ = ((MonoidAlgebra.single (g ^ n) (1:R) + MonoidAlgebra.single 1 0) * (MonoidAlgebra.single g (1:R) - MonoidAlgebra.single 1 1)) + (MonoidAlgebra.single (g ^ n) (1:R) - 1) := by
+        simp only [Finsupp.single_zero, add_zero, MonoidAlgebra.one_def]
+      _ = ((MonoidAlgebra.single (g ^ n) (1:R) + MonoidAlgebra.single 1 0) * (MonoidAlgebra.single g (1:R) + MonoidAlgebra.single 1 (-1))) + (MonoidAlgebra.single (g ^ n) (1:R) - 1) := by
+        simp only [sub_distrib, Finsupp.single_neg]
+      _ = (MonoidAlgebra.single (g ^ n * g) (1:R) + (MonoidAlgebra.single (g ^ n) (-1:R))) + (MonoidAlgebra.single (g ^ n) (1:R) + MonoidAlgebra.single 1 (-1)) := by
+        congr ; rw [mul_distrib] ; group ; simp ; rw [← sub_distrib, MonoidAlgebra.one_def]
+      _ = MonoidAlgebra.single (g ^ n * g) (1:R) - 1 := by
+        simp [sub_distrib,MonoidAlgebra.one_def] ; group
+    congr ; exact (pow_succ' g n).symm
+
+lemma expand_basis_of_power_neg_nat (g : G) (n : ℕ) : (MonoidAlgebra.single (g ^ n)⁻¹ (1:R) - 1) =
+    -MonoidAlgebra.single (g ^ n)⁻¹ (1:R) * (MonoidAlgebra.single (g ^ n) (1:R) - 1) := by
+  group
+  rw [MonoidAlgebra.single_mul_single, MonoidAlgebra.one_def]
+  group
+
+lemma basis_of_power_is_mul_of_basis (g : G) (z : ℤ) :
+    (MonoidAlgebra.single (g ^ z) (1:R) - 1) ∈ {f * (MonoidAlgebra.single g (1:R) - 1) | f : MonoidAlgebra R G} := by
+  induction z with
+  | ofNat n =>
+    simp only [Int.ofNat_eq_coe, zpow_coe_nat, Set.mem_setOf_eq,expand_basis_of_power_nat]
+    use (∑ i : Fin n, MonoidAlgebra.single (g ^ (i : ℕ)) 1)
+  | negSucc n =>
+    simp only [zpow_negSucc, Set.mem_setOf_eq,
+      expand_basis_of_power_neg_nat, expand_basis_of_power_nat]
+    use -MonoidAlgebra.single (g ^ (-((n + 1):ℤ))) 1 * ((∑ i : Fin (n + 1), MonoidAlgebra.single (g ^ (i:ℕ)) 1))
+    group
+
+lemma basis_of_power_is_mul_of_basis' (g : G) (z : ℤ) :
+    ∃ f : MonoidAlgebra R G, f * (MonoidAlgebra.single g (1:R) - 1) = (MonoidAlgebra.single (g ^ z) (1:R) - 1) := by
+  exact basis_of_power_is_mul_of_basis g z
+
+variable (R G) in
+theorem univ_mul_basis_of_gen_eq_aug : {f * (MonoidAlgebra.single gen (1:R) - 1) | f : MonoidAlgebra R G} = Δ R,G := by
+  ext x
+  constructor
+  · rintro ⟨y, hy⟩
+    unfold AugmentationIdeal
+    rw [SetLike.mem_coe, @RingHom.mem_ker, ←hy, @RingHom.map_mul]
+    suffices (AugmentationMap R G) (MonoidAlgebra.single gen 1 - 1) = 0 by {
+      rw[this] ; ring
+    }
+    suffices (MonoidAlgebra.single gen 1 - 1) ∈ Δ R,G by {
+      unfold AugmentationIdeal at this
+      rw[RingHom.mem_ker] at this
+      exact this
+    }
+    exact Basis.basis_elements_are_in_set R G gen
+  · intro hx
+    rw [Basis.mem_is_linearcomb_of_basis_singles x hx]
+    conv =>
+      enter [1, 2, a]
+      rw [← gen_pow_def a]
+      rw [← Classical.choose_spec <| basis_of_power_is_mul_of_basis' gen <| gen_pow a]
+      rw [← Algebra.smul_mul_assoc]
+    rw [Finset.sum_mul.symm]
+    simp
+
+lemma univ_mul_basis_of_gen_eq_aug' : g ∈ (Δ R,G) ↔ g ∈ {f * (MonoidAlgebra.single (G:=G) gen (1:R) - 1) | f : MonoidAlgebra R G} := by
+  rw [univ_mul_basis_of_gen_eq_aug] ; rfl
+
+variable (R G) in
+theorem aug_is_span_singleton : (Δ R,G) = Ideal.span {MonoidAlgebra.single gen (1:R) - 1} := by
+  ext f
+  rw [@Ideal.mem_span_singleton']
+  constructor
+  · intro hf
+    rwa [univ_mul_basis_of_gen_eq_aug'] at hf
+  · intro hf
+    rwa [univ_mul_basis_of_gen_eq_aug']
+
+
+theorem aug_pow_is_pow_of_mul_of_univ (n : ℕ): {x | x ∈ (Δ R,G) ^ n} = {f * ((MonoidAlgebra.single (G:=G) gen (1:R)) ^ n - 1) | f : MonoidAlgebra R G} := by
+  simp
+  sorry
+
+end Cyclic
 
 end AugmentationIdeal
