@@ -1,6 +1,7 @@
 import Mathlib
 import Project.AugmentationMap
 
+open BigOperators
 
 variable (R G : Type*) [CommGroup G] [CommRing R] [NoZeroDivisors R] [DecidableEq G]
 
@@ -34,8 +35,6 @@ namespace Finsupp
 /-
 Lemmas about funute support functions and their sums
 -/
-
-open BigOperators
 
 lemma sum_support_diff_singleton_is_sum_plus_singleton' (f : G →₀ R) (k : G) :
     ∑ a in f.support, (Finsupp.single a (f a) k) = (∑ a in (f.support \ {k}), (Finsupp.single a (f a) k)) + (Finsupp.single k (f k) k) := by
@@ -85,8 +84,6 @@ namespace AugmentationIdeal.Basis
 /-
 the definiton of the basis in the augmentation ideal
 -/
-open BigOperators
-
 
 lemma basis_elements_are_in_set (g : G) : (MonoidAlgebra.single g (1 : R)) - (1 : MonoidAlgebra R G) ∈ Δ R,G := by
   unfold AugmentationIdeal
@@ -100,8 +97,11 @@ lemma basis_elements_are_in_set (g : G) : (MonoidAlgebra.single g (1 : R)) - (1 
     Finset.sum_singleton, Finsupp.single_eq_same, Finsupp.single_eq_same, sub_self]
     assumption'
 
+def basis_def' : {g : G | g ≠ 1} → MonoidAlgebra R G := fun g =>
+  (MonoidAlgebra.single (g : G) (1 : R)) - (1 : MonoidAlgebra R G)
+
 def basis_def : {g : G | g ≠ 1} → Δ R,G := fun g => {
-  val := (MonoidAlgebra.single (g : G) (1 : R)) - (1 : MonoidAlgebra R G)
+  val := basis_def' R G g
   property := basis_elements_are_in_set R G g
 }
 
@@ -164,7 +164,7 @@ def support_to_basis_index (f : G →₀ R) (a : ↑(f.support \ {1})) : {g : G 
 theorem mem_is_linearcomb_of_basis (f : MonoidAlgebra R G) (h : f ∈ Δ R,G) :
     (f : G →₀ R) = (∑ a : ↑(f.support \ {1}), (f a) • (basis_def R G (support_to_basis_index f a))) := by
   conv => lhs ; rw [mem_is_linearcomb_of_basis_singles f h]
-  unfold basis_def support_to_basis_index
+  unfold basis_def support_to_basis_index basis_def'
   simp only [Finsupp.mem_support_iff, ne_eq, not_not, Finset.singleton_subset_iff,
     Finset.univ_eq_attach, AddSubmonoid.coe_finset_sum, Submodule.coe_toAddSubmonoid,
     Submodule.coe_smul_of_tower]
@@ -175,6 +175,7 @@ lemma coe_iff (a : Δ R,G) (b : MonoidAlgebra R G) (h : b ∈ Δ R,G) : a = ⟨b
   · obtain ⟨a', ha'⟩ := a
     simp only [Subtype.mk.injEq, imp_self]
   · exact fun a_1 => SetCoe.ext a_1
+
 
 theorem spans_top_set : ⊤ ≤ Submodule.span R (Set.range (basis_def R G)) := by
   rw [@SetLike.le_def]
@@ -209,6 +210,7 @@ theorem linear_independent : LinearIndependent R (basis_def R G) := by
   specialize h' i
   rw [@Finsupp.not_mem_support_iff] at h'
   rw[Finset.sum_apply'] at h'
+  unfold basis_def' at h'
   simp only [smul_sub] at h'
   have h'' (x : { x // ¬x = 1 }) : (↑(f x • MonoidAlgebra.single (G:=G) (↑x) (1:R) - f x • 1) : G →₀ R) i =
       ↑(f x • MonoidAlgebra.single (G:=G) (↑x) (1:R) i - f x • MonoidAlgebra.single (G:=G) 1 (1:R) i) := by
@@ -273,8 +275,6 @@ lemma mul_distrib_of_basis (f g : G) : (MonoidAlgebra.single f (1:R) - 1) * (Mon
 
 
 namespace Cyclic
-
-open BigOperators
 
 variable [hG : IsCyclic G] {R G}
 
@@ -405,6 +405,240 @@ theorem aug_pow_is_pow_of_mul_of_univ (n : ℕ) : {f * (MonoidAlgebra.single (G:
     rwa [@Set.mem_setOf]
 
 
+
 end Cyclic
+
+namespace Quotients
+
+variable [Fintype G] {G}
+
+lemma pow_card_sub_one_eq_zero (x : G) : MonoidAlgebra.single (x ^ Fintype.card G) (1:R) - 1 = 0 := by
+  simp [MonoidAlgebra.one_def]
+
+lemma pow_card_eq_binomial_exp (x : G) :
+    (MonoidAlgebra.single x (1:R)) ^ Fintype.card G =
+    ∑ i in Finset.range (Fintype.card G + 1), (Nat.choose (Fintype.card G) i) • ((MonoidAlgebra.single x (1:R) - 1) ^ (i:ℕ)) := by
+  conv =>
+    enter [1, 1]
+    rw [←add_zero (MonoidAlgebra.single x 1), ←sub_self 1, sub_eq_add_neg, add_comm 1, ←add_assoc, ←sub_eq_add_neg]
+  rw[add_pow]
+  congr ; ext ; group
+
+lemma pow_card_sub_one_eq_binomial_exp (x : G) :
+    (MonoidAlgebra.single x (1:R)) ^ Fintype.card G - 1 =
+    ∑ i in Finset.range (Fintype.card G), (Nat.choose (Fintype.card G) (i+1)) • ((MonoidAlgebra.single x (1:R) - 1) ^ (i+1)) := by
+  rw [pow_card_eq_binomial_exp]
+  rw [Finset.sum_range_succ']
+  suffices Nat.choose (Fintype.card G) 0 • (MonoidAlgebra.single x (1:R) - 1) ^ 0 = 1 by {
+    rw [this] ; simp
+  }
+  rw [@nsmul_eq_mul, pow_zero, Nat.choose_zero_right]
+  group
+
+
+lemma card_smul_basis_eq_neg_binomial_exp (x : G) :
+    (Fintype.card G) • (MonoidAlgebra.single x (1:R) - 1) =
+    - ∑ i in Finset.range (Fintype.card G - 1), Nat.choose (Fintype.card G) (i+1+1) • ((MonoidAlgebra.single x (1:R) - 1) ^ (i+1+1)) := by
+  conv =>
+    enter [2, 1]
+    rw [← add_zero (∑ i in Finset.range (Fintype.card G - 1),
+        (Nat.choose (Fintype.card G) (i + 1 + 1)) • (MonoidAlgebra.single x 1 - 1) ^ (i + 1 + 1))]
+    rw [← sub_self (Nat.choose (Fintype.card G) (0 + 1) • (MonoidAlgebra.single x 1 - 1) ^ (0 + 1))]
+    rw [sub_eq_add_neg (Nat.choose (Fintype.card G) (0 + 1) • (MonoidAlgebra.single x 1 - 1) ^ (0 + 1))]
+    rw [← add_assoc]
+  conv =>
+    enter [2, 1, 1]
+    rw[←Finset.sum_range_succ' (fun k => Nat.choose (Fintype.card G) (k + 1) • (MonoidAlgebra.single x 1 - 1) ^ (k + 1))]
+  rw [Nat.sub_add_cancel] ; simp only [zero_add, Nat.choose_one_right, pow_one,
+    neg_add_rev, neg_neg, self_eq_add_right, neg_eq_zero]
+  rw[← pow_card_sub_one_eq_binomial_exp]
+  simp [MonoidAlgebra.one_def]
+  by_cases Fintype.card G ≠ 0
+  · exact Nat.one_le_iff_ne_zero.mpr h
+  · exfalso
+    rw [@not_ne_iff] at h
+    replace h := Fintype.card_eq_zero_iff.mp h
+    rw [@isEmpty_iff] at h ; apply h
+    exact 1
+
+lemma card_smul_basis_mem_aug_squared (x : G) :
+    (Fintype.card G) • (MonoidAlgebra.single x (1:R) - 1) ∈ (Δ R,G) ^ 2 := by
+  rw [card_smul_basis_eq_neg_binomial_exp]
+  conv =>
+    enter [1, 1, 2, i, 2]
+    rw [show i + 1 + 1 = i + 2 by ring,pow_add]
+  conv =>
+    enter [1, 1, 2, i]
+    rw [nsmul_eq_mul, ← mul_assoc]
+  rw [← Finset.sum_mul]
+  rw [@Ideal.neg_mem_iff]
+  apply Ideal.mul_mem_left
+  apply Ideal.pow_mem_pow
+  exact Basis.basis_elements_are_in_set R G x
+
+
+lemma sup_union_finset_single_eq_sup_finset_sup_single (n : ℕ) (f : ℕ → Ideal R) :
+    ⨆ x ∈ (Finset.range n : Set ℕ) ∪ ({n} : Set ℕ), f x = (⨆ x ∈ (Finset.range n : Set ℕ), f x) ⊔ f n := by
+  rw [iSup_union, iSup_singleton]
+
+@[simp]
+lemma sup_succ (n : ℕ) (f : ℕ → Ideal R) : ⨆ x ∈ (Finset.range (Nat.succ n) : Set ℕ), f x = (⨆ i ∈ (Finset.range n : Set ℕ), f i) ⊔ f n:= by
+  rw [←sup_union_finset_single_eq_sup_finset_sup_single]
+  rw [show (Finset.range n : Set ℕ) ∪ ({n} : Set ℕ) = (Finset.range (Nat.succ n) : Set ℕ) by ext m ; simp ; exact Nat.lt_succ.symm]
+
+lemma mem_fsup_iff_sum (n : ℕ) (f : ℕ → Ideal R) : ∀ x, x ∈ ⨆ i ∈ (Finset.range n : Set ℕ), f i ↔ ∃ g : ℕ → R, (∀ i ∈ Finset.range n, g i ∈ f i) ∧ x = ∑ i in Finset.range n, g i := by
+  induction n with
+  | zero =>
+    simp [Submodule.iSup_eq_span, Set.iUnion_of_empty,
+          Submodule.span_empty, Ideal.mem_bot]
+  | succ n ih =>
+    intro x
+    constructor
+    · intro hx
+      rw [sup_succ] at hx
+      rw [@Submodule.mem_sup] at hx
+      obtain ⟨y,⟨hy,⟨z,⟨hz,hyz⟩⟩⟩⟩ := hx
+      rw [ih y] at hy
+      obtain ⟨g, ⟨hg₁, hg₂⟩⟩ := hy
+      let g' : ℕ → R := fun m =>
+        if m = n then z else g m
+      use g'
+      constructor
+      · intro i hi
+        rw [@Finset.mem_range_succ_iff, @Nat.le_iff_lt_or_eq] at hi
+        cases hi with
+        | inl h =>
+          specialize hg₁ i
+          dsimp
+          have hi' : i ≠ n := Nat.ne_of_lt h
+          rw [if_neg hi']
+          apply hg₁
+          exact Finset.mem_range.mpr h
+        | inr h =>
+          dsimp ; rwa [if_pos h, h]
+      · rw [← hyz] ;
+        rw [Finset.sum_range_succ]
+        dsimp
+        rw [if_pos, add_left_inj]
+        rw [←Finset.sum_coe_sort]
+        have hi' (i : Finset.range n) : ↑i ≠ n := by
+          obtain ⟨_, hi''⟩ := i
+          rw [@Finset.mem_range] at hi''
+          exact Nat.ne_of_lt hi''
+        conv =>
+          enter [2, 2, i]
+          rw [if_neg (hi' i)]
+        rwa [Finset.sum_coe_sort]
+        rfl
+    · rintro ⟨g, ⟨hg₁, hg₂⟩⟩
+      rw [sup_succ]
+      rw [Submodule.mem_sup]
+      rw [Finset.sum_range_succ] at hg₂
+      use ∑ x in Finset.range n, g x
+      constructor
+      · rw [ih]
+        use g
+        constructor
+        · intro i hi
+          specialize hg₁ i
+          apply hg₁
+          simp at hi ⊢
+          exact Nat.lt.step hi
+        · rfl
+      · use (g n)
+        constructor
+        · apply hg₁
+          exact Finset.self_mem_range_succ n
+        · exact hg₂.symm
+
+example (n : ℕ) (I : Ideal R) : (Nat.succ n) • I = n • I + I := by
+  rw [← Nat.add_one]
+  rw [@succ_nsmul']
+
+theorem smul_eq_sup (n : ℕ) (I : Ideal R) : n • I = ⨆ i ∈ (Finset.range n : Set ℕ), I := by
+  ext i
+  induction n with
+  | zero => simp
+  | succ n =>
+    rw [succ_nsmul, sup_succ]
+    simp
+
+theorem sup_eq_sum (n : ℕ) (I : Ideal R) : ⨆ i ∈ (Finset.range n : Set ℕ), I = ∑ _i : Finset.range n, I := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [sup_succ, ih, ← Submodule.add_eq_sup]
+    simp
+
+theorem smul_eq_sum (n : ℕ) (I : Ideal R) : n • I = ∑ _i : Finset.range n, I := by
+  ext x
+  rw[smul_eq_sup, sup_eq_sum]
+
+lemma mem_smul_eq_sum (n : ℕ) (I : Ideal R) : ∀ x, x ∈ n • I ↔ ∃ g : Finset.range n → I, x = ∑ i : Finset.range n, g i := by
+  rw [smul_eq_sup]
+  intro x
+  rw [mem_fsup_iff_sum]
+  constructor
+  · rintro ⟨g, ⟨hg₁, hg₂⟩⟩
+    use fun i => {
+      val := g i
+      property := by
+        obtain ⟨i', hi'⟩ := i
+        simp
+        exact hg₁ i' hi'
+    }
+    simp
+    rwa [@Finset.sum_attach]
+  · rintro ⟨g, hg⟩
+    use fun i =>
+      if h : i ∈ Finset.range n then ↑(g ⟨i, h⟩) else 0
+    constructor
+    · intro i hi
+      rw [dif_pos hi]
+      exact Submodule.coe_mem (g { val := i, property := hi })
+    · rw [←Finset.sum_coe_sort]
+      conv =>
+        enter [2, 2, i]
+        rw [dif_pos i.property]
+        simp
+      simp at hg ⊢
+      assumption
+
+
+------ ## Mathlib.LinearAlgebra.Span
+------ ## Mathlib.Order.CompleteLattice
+
+#check Submodule.span_induction
+#check Submodule.smul_span
+
+variable (G) in
+theorem card_smul_aug_sub_aug_squared' :
+    Fintype.card G • (Δ R,G) ≤ (Δ R,G) ^ 2 := by
+  intro x hx
+  rw [mem_smul_eq_sum] at hx
+  obtain ⟨g, hg⟩ := hx
+  sorry
+
+
+variable (G) in
+lemma card_smul_aug_sub_aug_squared :
+    {Fintype.card G • f | f ∈ Δ R,G} ⊆ ((Δ R,G) ^ 2 : Ideal (MonoidAlgebra R G)) := by
+  rw [@Set.subset_def]
+  rintro x ⟨d, ⟨hd, hx⟩⟩
+  rw [Basis.mem_is_linearcomb_of_basis_singles' _ hd] at hx
+  rw [@Finset.smul_sum] at hx
+  conv at hx =>
+    enter [1, 2, x]
+    rw[smul_comm]
+  suffices ∀ x, Fintype.card G • (MonoidAlgebra.single x 1 - 1) ∈ (Δ R,G)^2 by {
+    rw[←hx]
+
+    rw?
+  }
+  sorry
+
+
+
+end Quotients
 
 end AugmentationIdeal
