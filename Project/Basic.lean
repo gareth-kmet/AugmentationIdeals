@@ -280,7 +280,6 @@ variable [hG : IsCyclic G] {R G}
 
 def gen : G := Classical.choose hG.exists_generator
 
-
 lemma gen_def : ∀ x : G, x ∈ Subgroup.zpowers gen := by
   exact Classical.choose_spec hG.exists_generator
 
@@ -373,6 +372,7 @@ theorem univ_mul_basis_of_gen_eq_aug : {f * (MonoidAlgebra.single gen (1:R) - 1)
     rw [Finset.sum_mul.symm]
     simp
 
+variable (R) in
 lemma univ_mul_basis_of_gen_eq_aug' : g ∈ (Δ R,G) ↔ g ∈ {f * (MonoidAlgebra.single (G:=G) gen (1:R) - 1) | f : MonoidAlgebra R G} := by
   rw [univ_mul_basis_of_gen_eq_aug] ; rfl
 
@@ -386,10 +386,24 @@ theorem aug_is_span_singleton : (Δ R,G) = Ideal.span {MonoidAlgebra.single gen 
   · intro hf
     rwa [univ_mul_basis_of_gen_eq_aug']
 
+variable (R G) in
+theorem aug_pow_is_span_singleton (n : ℕ) : (Δ R,G) ^ n = Ideal.span {(MonoidAlgebra.single gen (1:R) - 1) ^ n} := by
+  rw [aug_is_span_singleton, Ideal.span_singleton_pow]
 
-theorem aug_pow_is_pow_of_mul_of_univ (n : ℕ): {x | x ∈ (Δ R,G) ^ n} = {f * ((MonoidAlgebra.single (G:=G) gen (1:R)) ^ n - 1) | f : MonoidAlgebra R G} := by
-  simp
-  sorry
+variable (R G) in
+theorem aug_pow_is_pow_of_mul_of_univ (n : ℕ) : {f * (MonoidAlgebra.single (G:=G) gen (1:R) - 1) ^ n | f : MonoidAlgebra R G} = ((Δ R,G) ^ n : Ideal (MonoidAlgebra R G)) := by
+  ext f
+  constructor
+  · rintro ⟨y, hy⟩
+    rw [@SetLike.mem_coe, ←hy]
+    apply Ideal.mul_mem_left
+    apply Ideal.pow_mem_pow
+    exact Basis.basis_elements_are_in_set R G gen
+  · rintro hf
+    rw [aug_pow_is_span_singleton, @SetLike.mem_coe] at hf
+    rw [@Ideal.mem_span_singleton'] at hf
+    rwa [@Set.mem_setOf]
+
 
 end Cyclic
 
