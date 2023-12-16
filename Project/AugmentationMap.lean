@@ -581,8 +581,11 @@ theorem mul_coeffients_is_mul_hom (f g : MonoidAlgebra R G): ∑ a in (f * g).su
 end calculations
 end AugmentationIdeal.AugmentationMap
 
-variable (R G) [CommGroup G] [CommRing R] [NoZeroDivisors R] in
-def AugmentationIdeal.AugmentationMap : (MonoidAlgebra R G) →+* R where
+namespace AugmentationIdeal
+
+variable [CommGroup G] [CommRing R] [NoZeroDivisors R]
+-- A computable version of `AugmentationIdeal.AugmenationMap`
+def AugmentationMap' : (MonoidAlgebra R G) →+* R where
   toFun := by intro f ; exact ∑ a in ↑f.support, (f : G →₀ R) a
   map_mul' _ _ := AugmentationMap.mul_coeffients_is_mul_hom _ _
   map_zero' := by dsimp
@@ -596,3 +599,26 @@ def AugmentationIdeal.AugmentationMap : (MonoidAlgebra R G) →+* R where
       · rw [@ne_eq] ; exact h
   map_add' := by
     dsimp ; intro (f : G →₀ R) (g : G →₀ R) ; rw[Finsupp.sum_coefficents_is_add_hom]
+
+noncomputable def AugmentationMap : (MonoidAlgebra R G) →+* R :=
+  MonoidAlgebra.lift R G R {
+    toFun := fun _ => (1 : R)
+    map_one' := rfl
+    map_mul' := fun _ _ => by simp
+  } |>.toRingHom
+
+theorem AugmentationMap.fun_def (f : MonoidAlgebra R G) :
+    AugmentationMap f = (Finsupp.sum f fun _ b => b) := by
+  simp [AugmentationMap, MonoidAlgebra.lift_apply]
+
+lemma AugmentationMap.fun_def' (f : MonoidAlgebra R G) :
+    AugmentationMap f = ∑ a in ↑f.support, (f : G →₀ R) a := by
+  simp[fun_def] ; rfl
+
+lemma AugmentationMap.fun_def'' (f : MonoidAlgebra R G) :
+    AugmentationMap f = ∑ a : f.support, (f :  G →₀ R) a := by
+  simp [fun_def', Finset.sum_attach]
+
+lemma AugmentationMap'.fun_def (f : MonoidAlgebra R G) :
+    AugmentationMap' f = AugmentationMap f := by
+  simp [AugmentationMap', AugmentationMap.fun_def']

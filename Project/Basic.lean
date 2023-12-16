@@ -5,7 +5,7 @@ open BigOperators
 
 variable (R G : Type*) [CommGroup G] [CommRing R] [NoZeroDivisors R] [DecidableEq G]
 
-def AugmentationIdeal : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal.AugmentationMap R G)
+def AugmentationIdeal : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal.AugmentationMap' (R:=R) (G:=G))
 
 namespace AugmentationIdeal
 
@@ -88,7 +88,7 @@ the definiton of the basis in the augmentation ideal
 lemma basis_elements_are_in_set (g : G) : (MonoidAlgebra.single g (1 : R)) - (1 : MonoidAlgebra R G) ∈ Δ R,G := by
   unfold AugmentationIdeal
   rw [RingHom.mem_ker, map_sub]
-  unfold AugmentationMap ; dsimp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
+  unfold AugmentationMap' ; dsimp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
   rw[MonoidAlgebra.one_def]
   by_cases (1:R) = 0
   · simp only [h, Finsupp.single_zero, Finsupp.support_zero, Finsupp.coe_zero, Pi.zero_apply,
@@ -108,7 +108,7 @@ def basis_def : {g : G | g ≠ 1} → Δ R,G := fun g => {
 variable {R G}
 
 theorem funct_is_linearcomb_of_basis_with_offset (f : G →₀ R) : f =
-    (∑ a in f.support, (f a) • ((MonoidAlgebra.single a (1 : R)) - (1 : MonoidAlgebra R G))) + MonoidAlgebra.single 1 (AugmentationMap R G f) := by
+    (∑ a in f.support, (f a) • ((MonoidAlgebra.single a (1 : R)) - (1 : MonoidAlgebra R G))) + MonoidAlgebra.single 1 (AugmentationMap' f) := by
   calc f
     _ = ∑ a in f.support, (f a) • ((MonoidAlgebra.single a (1 : R)) - (1 : MonoidAlgebra R G) + (1 : MonoidAlgebra R G)) := by
       conv => enter [2, 2, a, 2] ; rw [sub_add_cancel]
@@ -121,7 +121,7 @@ theorem funct_is_linearcomb_of_basis_with_offset (f : G →₀ R) : f =
         MonoidAlgebra.single 1 (∑ a in f.support, (f a)) := by
       rw [MonoidAlgebra.one_def, Finsupp.sum_single_is_single_sum R G f 1]
     _ = (∑ a in f.support, (f a) • ((MonoidAlgebra.single a (1 : R)) - (1 : MonoidAlgebra R G))) +
-        MonoidAlgebra.single 1 (AugmentationMap R G f) := by rw [AugmentationMap] ; dsimp
+        MonoidAlgebra.single 1 (AugmentationMap' f) := by rw [AugmentationMap'] ; dsimp
 
 lemma mem_is_linearcomb_of_basis_singles' (f : MonoidAlgebra R G) (h : f ∈ Δ R,G) :
     (f : G →₀ R) = (∑ a in f.support, (f a) • ((MonoidAlgebra.single a (1 : R)) - (1 : MonoidAlgebra R G))) := by
@@ -353,7 +353,7 @@ theorem univ_mul_basis_of_gen_eq_aug : {f * (MonoidAlgebra.single gen (1:R) - 1)
   · rintro ⟨y, hy⟩
     unfold AugmentationIdeal
     rw [SetLike.mem_coe, @RingHom.mem_ker, ←hy, @RingHom.map_mul]
-    suffices (AugmentationMap R G) (MonoidAlgebra.single gen 1 - 1) = 0 by {
+    suffices (AugmentationMap' (R:=R) (G:=G)) (MonoidAlgebra.single gen 1 - 1) = 0 by {
       rw[this] ; ring
     }
     suffices (MonoidAlgebra.single gen 1 - 1) ∈ Δ R,G by {
@@ -610,18 +610,101 @@ lemma mem_smul_eq_sum (n : ℕ) (I : Ideal R) : ∀ x, x ∈ n • I ↔ ∃ g :
 
 #check Submodule.span_induction
 #check Submodule.smul_span
+variable (n : ℕ)
+#check n • Submodule.span R (Set.range (Basis.basis_def' R G))
+#check n • (Basis.basis_def' R G)
+#check n • (Δ R,G).carrier
+
+#check Basis.mem_span
+#check Basis.span_eq
+#check Submodule.map
+#check LinearMapClass
+
+
+#check (MonoidAlgebra R G) →ₗ[R] (MonoidAlgebra R G)
+variable (G) in
+def smul_def_pointwise (n : ℕ) : (MonoidAlgebra R G) →ₗ[R] (MonoidAlgebra R G) where
+  toFun r := n • r
+  map_add' _ _ := by simp
+  map_smul' _ _ := by simp
+
+scoped notation m " •ₚ " b => Submodule.map (smul_def_pointwise m) b
+
+example : (Submodule.span R (Set.range (Basis.basis_def' R G))).map (smul_def_pointwise n) =
+    Submodule.span R ((smul_def_pointwise n) '' Set.range (Basis.basis_def' R G)) := by
+  rw [@LinearMap.map_span]
+
+example (g : G) (r : R) (h : r ≠ 0) : (MonoidAlgebra.single g r).support = {g} := by
+  rw [Finsupp.support_single_ne_zero g h]
 
 variable (G) in
-theorem card_smul_aug_sub_aug_squared' :
+@[deprecated]
+theorem card_smul_aug_sub_aug_squared : --- FLASE
     Fintype.card G • (Δ R,G) ≤ (Δ R,G) ^ 2 := by
-  intro x hx
-  rw [mem_smul_eq_sum] at hx
-  obtain ⟨g, hg⟩ := hx
+  intro x
+  rw [mem_smul_eq_sum]
+  rintro ⟨g, hx⟩
+  let f' : Finset.range (Fintype.card G) → ((Δ R,G) ^ 2 : Ideal (MonoidAlgebra R G)) := fun i => {
+    val := g i
+    property := by
+      rw [@sq]
+      rw [show ↑(g i) = ↑(g i) * (1:MonoidAlgebra R G) by group]
+      apply Ideal.mul_mem_mul
+      · exact Submodule.coe_mem (g i)
+      · unfold AugmentationIdeal AugmentationMap'
+        rw [@RingHom.mem_ker, MonoidAlgebra.one_def]
+        simp
+        by_cases (1:R) = 0
+        · sorry
+        · conv =>
+            enter [1, 1]
+            rw [Finsupp.support_single_ne_zero _ h]
+          rw [@Finset.sum_singleton]
+          simp
+          sorry
+  }
+
+
+#check Ideal.mul_bot
+example (I J : Ideal R) (x : R) : x ∈ I * J ↔ ∃ n, ∃ f₁ : Fin n → I, ∃ f₂ : Fin n → J, ∑ i : Fin n, (f₁ i : R) * (f₂ i) = x := by
   sorry
 
+example (I J : Ideal R) : I / J = I := by
+  ext x
+  rw?
+#check Ideal R
+
+--use the distrib mul action given by Mathlib.Algebra.Module.Submodule.Pointwise
+#check Submodule.pointwiseDistribMulAction
+
+#check ((Δ R,G) )
+
+section Pointwise
+open scoped Pointwise
+
+#synth DistribMulAction ℕ (Submodule R (MonoidAlgebra R G))
+variable (n : ℕ)
+#check n * (Submodule.span R (Set.range (Basis.basis_def' R G)))
+#check n • (Submodule.span R (Set.range (Basis.basis_def' R G)))
+#check Submodule.pointwiseDistribMulAction.smul n (Submodule.span R (Set.range (Basis.basis_def' R G)))
+
+example (I : Submodule R (MonoidAlgebra R G)) : Submodule R (MonoidAlgebra R G) := n • I
+
+example (I : Submodule R (MonoidAlgebra R G)) :
+    Submodule.pointwiseDistribMulAction.smul n I = n * I := by sorry
+
+example (I : Ideal (MonoidAlgebra R G)) : Submodule R (MonoidAlgebra R G) := by
+  exact I
+
+lemma card_smul_pw_aug_sub_aug_squared' :
+  Submodule.pointwiseDistribMulAction.smul (Fintype.card G) (Submodule.span R (Set.range (Basis.basis_def' R G)))
+  ≤ ((Δ R,G) ^ 2 : Ideal (MonoidAlgebra R G)) := by sorry
+
+variable (M : Type*) [AddCommMonoid M] [Module R M]
+variable (α : Type*) [Monoid α] [DistribMulAction α R] --[SMulCommClass α R M]
 
 variable (G) in
-lemma card_smul_aug_sub_aug_squared :
+lemma card_smul_pw_aug_sub_aug_squared :
     {Fintype.card G • f | f ∈ Δ R,G} ⊆ ((Δ R,G) ^ 2 : Ideal (MonoidAlgebra R G)) := by
   rw [@Set.subset_def]
   rintro x ⟨d, ⟨hd, hx⟩⟩
@@ -631,11 +714,33 @@ lemma card_smul_aug_sub_aug_squared :
     enter [1, 2, x]
     rw[smul_comm]
   suffices ∀ x, Fintype.card G • (MonoidAlgebra.single x 1 - 1) ∈ (Δ R,G)^2 by {
-    rw[←hx]
-
-    rw?
+    rw [@SetLike.mem_coe]
+    rw [←hx]
+    let f : G → ((Δ R,G)^2 : Ideal (MonoidAlgebra R G)) := fun y => {
+      val := d y • Fintype.card G • (MonoidAlgebra.single y 1 - 1)
+      property := Submodule.smul_of_tower_mem ((Δ R,G) ^ 2) (d y) (this y)
+    }
+    have hf (y : G) : f y = d y • Fintype.card G • (MonoidAlgebra.single y (1:R) - 1) := rfl
+    conv =>
+      enter [1, 2, y]
+      rw [← hf]
+    rw [← @Submodule.coe_sum]
+    exact Submodule.coe_mem (∑ i in d.support, f i)
   }
-  sorry
+  exact fun y => card_smul_basis_mem_aug_squared R y
+
+
+end Pointwise
+
+lemma card_smul_power_is_subset_succ (n : ℕ) : -- FALSE
+    Fintype.card G • (Δ R,G) ^ (n + 1) ≤ (Δ R,G) ^ (n + 2) := by
+  rw [show (Δ R,G) ^ (n + 1) = (Δ R,G) * (Δ R,G) ^ n from rfl]
+  rw [nsmul_eq_mul, ← mul_assoc, ← nsmul_eq_mul]
+  rw [show (Δ R,G) ^ (n + 2) = (Δ R,G) ^ 2 * (Δ R,G) ^ n by ring]
+  apply Ideal.mul_mono_left
+  exact card_smul_aug_sub_aug_squared R G
+
+
 
 
 
