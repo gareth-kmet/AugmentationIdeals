@@ -24,6 +24,31 @@ open BigOperators
 
 variable {R G : Type*} [DecidableEq G]
 
+namespace AugmentationIdeal
+
+variable [CommGroup G] [CommRing R] [NoZeroDivisors R]
+
+noncomputable def AugmentationMap : (MonoidAlgebra R G) →+* R :=
+  MonoidAlgebra.lift R G R {
+    toFun := fun _ => (1 : R)
+    map_one' := rfl
+    map_mul' := fun _ _ => by simp
+  } |>.toRingHom
+
+theorem AugmentationMap.fun_def (f : MonoidAlgebra R G) :
+    AugmentationMap f = (Finsupp.sum f fun _ b => b) := by
+  simp [AugmentationMap, MonoidAlgebra.lift_apply]
+
+lemma AugmentationMap.fun_def' (f : MonoidAlgebra R G) :
+    AugmentationMap f = ∑ a in ↑f.support, (f : G →₀ R) a := by
+  simp[fun_def] ; rfl
+
+lemma AugmentationMap.fun_def'' (f : MonoidAlgebra R G) :
+    AugmentationMap f = ∑ a : f.support, (f :  G →₀ R) a := by
+  simp [fun_def', Finset.sum_attach]
+
+end AugmentationIdeal
+
 namespace Finset
 /-!
   Some lemmas about sums of finsets
@@ -121,6 +146,12 @@ lemma sum_union_is_left_and_sdiff (I J : Finset G) : (∑ x in (I ∪ J), f x) =
     rw [union_sdiff_self_eq_union]
   · exact disjoint_sdiff
 
+lemma sum_union_is_right_and_sdiff (I J : Finset G) : (∑ x in (I ∪ J), f x) = (∑ x in I \ J, f x) + (∑ x in J, f x) := by
+  rw [← Finset.sum_union]
+  · suffices I ∪ J = I \ J ∪ J by rw[this]
+    rw [sdiff_union_self_eq_union]
+  · exact sdiff_disjoint
+
 lemma sum_union_sdiff_is_sum_sdiff (I J K : Finset G) : ∑ x in (I ∪ J) \ K, f x = (∑ x in I \ K, f x) + (∑ x in J \ K, f x) - (∑ x in (I ∩ J) \ K, f x) := by
   rw [← @sum_union_inter]
   rw [show I \ K ∪ J \ K = (I ∪ J) \ K by
@@ -167,6 +198,90 @@ lemma sum_of_funct_is_sum_over_image'' (β : Finset G) (γ : G → R) (φ : G �
   refine (sum_subtype β ?_ fun a => γ (φ a)).symm
   simp only [implies_true]
   assumption
+
+lemma sum_in_eq_sum_type {A : Type*} (α : Finset A) (f : A → R) : ∑ a in α, f a = ∑ a : α, f ↑a := by
+  rw [← Finset.sum_attach]
+  simp
+
+lemma sum_of_funct_is_sum_over_image_equiv_nat (β : Finset G) (γ : G → R) (φ : ℕ → G) (ψ : G → ℕ)
+    (h : ∀ x ∈ β, φ (ψ x) = x) (inj : ∀ x ∈ β, ∀ y ∈ β, ψ x = ψ y → x = y) :
+    ∑ a in β, γ a = ∑ i in (ψ '' β).toFinset, γ (φ i) := by
+  simp ; rw [sum_image]
+  conv => rhs ; rw [sum_in_eq_sum_type]
+  conv => enter [2, 2, x] ; rw [h ↑x x.property]
+  rwa [← sum_in_eq_sum_type]
+
+lemma sum_of_funct_is_sum_over_image_equiv_nat' (β : Finset G) (γ : G → R) (φ : ℕ → G) (ψ : G → ℕ)
+    (h : ∀ x ∈ β, φ (ψ x) = x) (inj : ∀ x ∈ β, ∀ y ∈ β, ψ x = ψ y → x = y) :
+    ∑ a : β, γ a = ∑ i : (ψ '' β).toFinset, γ (φ i) := by
+  rw [← sum_in_eq_sum_type]
+  conv => rhs ; rw [← sum_in_eq_sum_type (ψ '' β).toFinset (fun a => γ (φ a))]
+  rw [sum_of_funct_is_sum_over_image_equiv_nat]
+  assumption'
+
+lemma sum_equiv_sum_indexed_by_card (β : Finset G) (γ : G → R) :
+    ∑ a : β, γ a = ∑ i : Fin β.card, γ (β.equivFin.invFun i) := by
+  by_cases hcard : β.card = 0
+  · rw [@card_eq_zero] at hcard ; rw [hcard]
+    simp
+  · let φ : ℕ → G := fun i => by
+      by_cases i < β.card
+      · exact ↑(β.equivFin.invFun ⟨i,h⟩)
+      · exact ↑(β.equivFin.invFun ⟨0, Nat.pos_of_ne_zero hcard⟩)
+    let ψ : G → ℕ := fun g => by
+      by_cases g ∈ β
+      · exact ↑(β.equivFin.toFun ⟨g,h⟩)
+      · exact 0
+    have hψ : ∀ b : β, ↑(β.equivFin.toFun b) = ψ ↑b := by simp
+    have hh : ∀ x ∈ β, φ (ψ x) = x := by
+      intro _ h' ; simp [dif_pos h']
+    have inj : ∀ x ∈ β, ∀ y ∈ β, ψ x = ψ y → x = y := by
+      intro x hx y hy
+      rw [← hψ ⟨x,hx⟩, ← hψ ⟨y,hy⟩]
+      have h : Function.Injective β.equivFin.toFun := by
+        rw [@Equiv.toFun_as_coe]
+        exact Equiv.injective (equivFin β)
+      intro heq
+      unfold Function.Injective at h
+      have h' : (⟨x,hx⟩ : β) = ⟨y,hy⟩ → x = y := by simp
+      apply h' ; apply h
+      exact Fin.ext heq
+    rw [sum_of_funct_is_sum_over_image_equiv_nat' β γ φ ψ hh inj]
+    rw [← sum_in_eq_sum_type (Set.toFinset (ψ '' β)) (fun x => γ (φ x))]
+    rw [sum_fin_eq_sum_range]
+    have hf : Set.toFinset (ψ '' ↑β) = range (card β) := by
+      ext i
+      constructor
+      · intro hi
+        rw [@Set.mem_toFinset] at hi
+        obtain ⟨x, ⟨hx₁, hx₂⟩⟩ := hi
+        dsimp at hx₂
+        rw [@mem_coe] at hx₁
+        rw [dif_pos hx₁] at hx₂
+        simp
+        have hi' : ∃ j : Fin β.card, ↑j = i := by
+          use (β.equivFin ⟨x,hx₁⟩)
+        obtain ⟨⟨j,hj₁⟩, hj₂⟩ := hi'
+        simp at hj₂
+        rwa [← hj₂]
+      · intro hi
+        rw [Set.mem_toFinset]
+        rw [@Set.mem_image]
+        dsimp
+        simp at hi
+        use β.equivFin.invFun ⟨i, hi⟩
+        simp
+    rw [hf, sum_in_eq_sum_type]
+    conv => rhs ; rw [sum_in_eq_sum_type]
+    congr ; ext j
+    obtain ⟨i, hi⟩ := j
+    simp at hi
+    simp [dif_pos hi]
+
+lemma sum_equiv_sum_indexed_by_card' (β : Finset G) (γ : G → R) :
+    ∑ a in β, γ a = ∑ i : Fin β.card, γ (β.equivFin.invFun i) := by
+  rw [sum_in_eq_sum_type]
+  exact sum_equiv_sum_indexed_by_card β γ
 
 
 variable [CommRing R]
@@ -245,7 +360,7 @@ lemma inter_supp_mul_is_union_supp_mul : ∑ u in (f.support ∩ g.support), f u
 
 end Finsupp
 
-namespace AugmentationIdeal.AugmentationMap
+namespace AugmentationIdeal'.AugmentationMap
 
 /-!
   Some Lemmas about multiplication within MonoidAlgebras
@@ -400,6 +515,8 @@ theorem mul_def' : (f * g) a = ∑ a₁ in f.support, f a₁ * g (a₁⁻¹ * a)
   rw [mul_def'', sum_gsupport_is_sum_gsupport, gsupport_gives_same_mul, sum_of_singles_of_a_at_a_is_sum_of_scalar_of_coeficients]
   conv => enter [1, 2, a₁] ; rw [mul_inner_sum_unecessary]
 
+lemma mul_def''' : ↑(f * g) = fun a => ∑ a₁ in f.support, f a₁ * g (a₁⁻¹ * a) := by
+  ext ; exact mul_def' _ _ _
 
 lemma mul_support_mem₁ : x ∈ (f * g).support ↔ x ∈ {x | ∑ a in f.support, f a * g (a⁻¹ * x) ≠ 0} := by
   simp only [Finsupp.mem_support_iff, Set.mem_setOf_eq, mul_def']
@@ -579,13 +696,13 @@ theorem mul_coeffients_is_mul_hom (f g : MonoidAlgebra R G): ∑ a in (f * g).su
   rw[finset_is_finset_union_support, support_is_finset_union_support]
 
 end calculations
-end AugmentationIdeal.AugmentationMap
 
-namespace AugmentationIdeal
+end AugmentationMap
 
 variable [CommGroup G] [CommRing R] [NoZeroDivisors R]
+
 -- A computable version of `AugmentationIdeal.AugmenationMap`
-def AugmentationMap' : (MonoidAlgebra R G) →+* R where
+def AugmentationMap : (MonoidAlgebra R G) →+* R where
   toFun := by intro f ; exact ∑ a in ↑f.support, (f : G →₀ R) a
   map_mul' _ _ := AugmentationMap.mul_coeffients_is_mul_hom _ _
   map_zero' := by dsimp
@@ -600,25 +717,16 @@ def AugmentationMap' : (MonoidAlgebra R G) →+* R where
   map_add' := by
     dsimp ; intro (f : G →₀ R) (g : G →₀ R) ; rw[Finsupp.sum_coefficents_is_add_hom]
 
-noncomputable def AugmentationMap : (MonoidAlgebra R G) →+* R :=
-  MonoidAlgebra.lift R G R {
-    toFun := fun _ => (1 : R)
-    map_one' := rfl
-    map_mul' := fun _ _ => by simp
-  } |>.toRingHom
 
-theorem AugmentationMap.fun_def (f : MonoidAlgebra R G) :
-    AugmentationMap f = (Finsupp.sum f fun _ b => b) := by
-  simp [AugmentationMap, MonoidAlgebra.lift_apply]
 
-lemma AugmentationMap.fun_def' (f : MonoidAlgebra R G) :
-    AugmentationMap f = ∑ a in ↑f.support, (f : G →₀ R) a := by
-  simp[fun_def] ; rfl
+@[simp]
+lemma AugmentationMap.fun_def (f : MonoidAlgebra R G) :
+    AugmentationMap f = AugmentationIdeal.AugmentationMap f := by
+  simp [AugmentationMap, AugmentationIdeal.AugmentationMap.fun_def']
 
-lemma AugmentationMap.fun_def'' (f : MonoidAlgebra R G) :
-    AugmentationMap f = ∑ a : f.support, (f :  G →₀ R) a := by
-  simp [fun_def', Finset.sum_attach]
+@[simp]
+lemma AugmentationMap.eq :
+    AugmentationMap (R:=R) (G:=G) = AugmentationIdeal.AugmentationMap := by
+  ext <;> simp
 
-lemma AugmentationMap'.fun_def (f : MonoidAlgebra R G) :
-    AugmentationMap' f = AugmentationMap f := by
-  simp [AugmentationMap', AugmentationMap.fun_def']
+end AugmentationIdeal'
