@@ -866,7 +866,7 @@ lemma card_pwsmul_npow_aug_subset_succ_pow_aug_apply (n : ℕ) (y : MonoidAlgebr
     y ∈ (Fintype.card G : MonoidAlgebra R G) • (((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G)) : Set (MonoidAlgebra R G)) →
     y ∈ ((Δ R,G) ^ (n + 2) : Ideal (MonoidAlgebra R G)) := fun a => (card_pwsmul_npow_aug_subset_succ_pow_aug R G n) a
 
-theorem quot_aug_finite_ord (n : ℕ) (x : quotNatOverSucc R G (n+1)) : addOrderOf x > 0 := by
+theorem quot_aug_finite_ord' (n : ℕ) (x : quotNatOverSucc R G (n+1)) : addOrderOf x > 0 := by
   apply addOrderOf_pos_iff.mpr
   rw [isOfFinAddOrder_iff_nsmul_eq_zero]
   use Fintype.card G
@@ -880,6 +880,19 @@ theorem quot_aug_finite_ord (n : ℕ) (x : quotNatOverSucc R G (n+1)) : addOrder
   unfold nrpow_addsubgroup_of_npow
   simp at hx ⊢
   rwa [show n + 1 + 1 = n + 2 from rfl]
+
+theorem quot_aug_finite_ord (n : ℕ) (x : quotNatOverSucc R G (n+1)) : IsOfFinAddOrder x := by
+  rw [← @addOrderOf_pos_iff]
+  exact quot_aug_finite_ord' n x
+
+instance quot_torsion : AddMonoid.IsTorsion (quotNatOverSucc R G (n+1)) := by
+  have : ¬(∃ x : quotNatOverSucc R G (n+1), ¬IsOfFinAddOrder x) := by
+    rw [@not_exists_not]
+    intro x ; exact quot_aug_finite_ord n x
+  contrapose this
+  rw [←AddMonoid.not_isTorsion_iff]
+  simp only [not_exists, not_not, not_forall]
+  exact this
 
 lemma ht : ⋃ s ∈ ((Δ R,G) : Set (MonoidAlgebra R G)), ⋃ t ∈ (((Δ R,G) ^ (n + 1) : Ideal (MonoidAlgebra R G)) : Set (MonoidAlgebra R G)), {s * t} =
     {s * t | (s ∈ ↑(Δ R,G)) (t ∈ ↑((Δ R,G) ^ (n + 1) : Ideal (MonoidAlgebra R G)))} := by
@@ -1007,6 +1020,13 @@ lemma asd' (n : ℕ) (f : (Finset.range (n+1)) → G) : ∏ i in Finset.attach (
   rw [Finset.mem_range] at hi
   simp [hi]
 
+lemma asd'' (n : ℕ) (r : R) (f : (Finset.range (n+1)) → G) : r • ∏ i in Finset.attach (Finset.range (n + 1)),
+    (MonoidAlgebra.single (f i) (1:R) - 1) ∈ ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G)) := by
+  rw [@Algebra.smul_def]
+  simp only [MonoidAlgebra.coe_algebraMap, Algebra.id.map_eq_id, Function.comp_apply,
+    RingHom.id_apply]
+  apply Ideal.mul_mem_left
+  exact asd' R G n fun i => f i
 
 lemma asd (n : ℕ) (f : ℕ → (Δ R,G)) (r : R) :
     ∑ p in Finset.pi (Finset.range (n + 1)) fun i => (f i : MonoidAlgebra R G).support \ {1},
@@ -1031,7 +1051,7 @@ lemma asd (n : ℕ) (f : ℕ → (Δ R,G)) (r : R) :
   exact asd' R G n (fun i => p ↑i i.property)
 
 
-lemma npow_mem_linearcomb_prod_basis'' (n : ℕ) (x : MonoidAlgebra R G) (hx : x ∈ ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
+lemma npow_mem_linearcomb_prod_basis.proof_1 (n : ℕ) (x : MonoidAlgebra R G) (hx : x ∈ ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
     ∃ m, ∃ f : Fin m → ℕ → (Δ R,G), ∃ r : Fin m → ((a : ℕ) → a ∈ Finset.range (n + 1) → G) → R, x =
     ∑ i : Fin m, ∑ p in Finset.pi (Finset.range (n + 1)) fun j => (f i j : MonoidAlgebra R G).support \ {1},
       r i p • ∏ j in Finset.attach (Finset.range (n + 1)), (MonoidAlgebra.single (p ↑j j.property) (1:R) - 1) := by
@@ -1071,10 +1091,10 @@ lemma npow_mem_linearcomb_prod_basis'' (n : ℕ) (x : MonoidAlgebra R G) (hx : x
   use m ; use f' ; use r'
   exact h.symm
 
-lemma npow_mem_linearcomb_prod_basis' (n : ℕ) (x : MonoidAlgebra R G) (hx : x ∈ ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
+lemma npow_mem_linearcomb_prod_basis.proof_2 (n : ℕ) (x : MonoidAlgebra R G) (hx : x ∈ ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
     ∃ A : Type u_2, ∃ α : Finset A, ∃ r : A → R, ∃ f : A → Finset.range (n + 1) → G, x =
     ∑ a in α, r a • ∏ j in Finset.attach (Finset.range (n + 1)), (MonoidAlgebra.single (f a j) (1:R) - 1) := by
-  obtain ⟨m, ⟨f, ⟨r, h⟩⟩⟩ := npow_mem_linearcomb_prod_basis'' R G n x hx
+  obtain ⟨m, ⟨f, ⟨r, h⟩⟩⟩ := npow_mem_linearcomb_prod_basis.proof_1 R G n x hx
   let fi := fun (i:ℕ) => by
     by_cases i < m
     · exact
@@ -1109,7 +1129,7 @@ lemma npow_mem_linearcomb_prod_basis' (n : ℕ) (x : MonoidAlgebra R G) (hx : x 
 theorem npow_mem_linearcomb_prod_basis (n : ℕ) (x : MonoidAlgebra R G) (hx : x ∈ ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
     ∃ m, ∃ f : Fin m → Finset.range (n + 1) → G, ∃ r : Fin m → R, x =
     ∑ i : Fin m, r i • ∏ j in Finset.attach (Finset.range (n + 1)), (MonoidAlgebra.single (f i j) (1:R) - 1) := by
-  obtain ⟨A, ⟨α, ⟨r, ⟨f, h⟩⟩⟩⟩ := npow_mem_linearcomb_prod_basis' R G n x hx
+  obtain ⟨A, ⟨α, ⟨r, ⟨f, h⟩⟩⟩⟩ := npow_mem_linearcomb_prod_basis.proof_2 R G n x hx
   letI : DecidableEq A := Classical.decEq A
   rw [Finset.sum_equiv_sum_indexed_by_card' α (fun a => r a • ∏ j in Finset.attach (Finset.range (n + 1)), (MonoidAlgebra.single (f a j) (1:R) - 1))] at h
   let m' := Finset.card α
@@ -1117,327 +1137,37 @@ theorem npow_mem_linearcomb_prod_basis (n : ℕ) (x : MonoidAlgebra R G) (hx : x
   let r' : Fin m' → R := fun i => r ↑(Equiv.invFun (Finset.equivFin α) i)
   use m' ; use f' ; use r'
 
+theorem npow_mem_linearcomb_prod_basis' (n : ℕ) (x : MonoidAlgebra R G) (hx : x ∈ ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
+    ∃ m, ∃ f : Finset.range m → Finset.range (n + 1) → G, ∃ r : Finset.range m → R, x =
+    ∑ i in Finset.attach (Finset.range m), r i • ∏ j in Finset.attach (Finset.range (n + 1)), (MonoidAlgebra.single (f i j) (1:R) - 1) := by
+  obtain ⟨m, ⟨f, ⟨r, h⟩⟩⟩ := npow_mem_linearcomb_prod_basis R G n x hx
+  use m
+  use (fun i => f ⟨↑i, List.mem_range.mp i.property⟩)
+  use (fun i => r ⟨↑i, List.mem_range.mp i.property⟩)
+  rw [h, Finset.sum_fin_eq_sum_range, ← Finset.sum_attach]
+  congr ; ext
+  rw [dif_pos]
 
+theorem npow_mem_linearcomb_prod_basis_subtype₁ (n : ℕ) (x : ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
+    ∃ m, ∃ f : Finset.range m → Finset.range (n+1) → G, ∃ r : Finset.range m → R, x =
+    ∑ i in Finset.attach (Finset.range m), ⟨r i • ∏ j in Finset.attach (Finset.range (n + 1)), (MonoidAlgebra.single (f i j) (1:R) - 1), asd'' R G n (r i) (f i)⟩ := by
+  obtain ⟨x, hx⟩ := x
+  obtain ⟨m, ⟨f, ⟨r, h⟩⟩⟩ := npow_mem_linearcomb_prod_basis' R G n x hx
+  use m ; use f ; use r
+  rw [@Subtype.ext_iff]
+  simpa only [AddSubmonoid.coe_finset_sum]
 
+theorem npow_mem_linearcomb_prod_basis_subtype₂ (n : ℕ) (x : ((Δ R,G) ^ (n+1) : Ideal (MonoidAlgebra R G))) :
+    ∃ m, ∃ f : Finset.range m → Finset.range (n+1) → G, ∃ r : Finset.range m → R, x =
+    ∑ i in Finset.attach (Finset.range m), r i • ⟨∏ j in Finset.attach (Finset.range (n + 1)), (MonoidAlgebra.single (f i j) (1:R) - 1), asd' R G n (f i)⟩ := by
+  obtain ⟨x, hx⟩ := x
+  obtain ⟨m, ⟨f, ⟨r, h⟩⟩⟩ := npow_mem_linearcomb_prod_basis' R G n x hx
+  use m ; use f ; use r
+  rw [@Subtype.ext_iff]
+  simpa only [AddSubmonoid.coe_finset_sum]
 
-
-
-  /-
-  obtain ⟨m, ⟨f, ⟨g, h⟩⟩⟩ := hx
-  rw [AddSubgroup.mem_closure]
-
-  intro K hK
-  let g' : Fin m → ℕ → (Δ R,G) := fun i => by
-    obtain ⟨d, hd⟩ := g i
-    rw [Set.mem_setOf_eq] at hd
-    exact hd.choose
-  have hg : ∀ i : Fin m, (g i : MonoidAlgebra R G) = ∏ j in Finset.range (n + 1), (g' i j : MonoidAlgebra R G) := by
-    intro i
-    dsimp only [Set.mem_setOf_eq, Set.coe_setOf, eq_mp_eq_cast, cast_eq]
-    rw [(g i).2.choose_spec]
-  have hg' (i : Fin m) := gener''' R G n (g i) <| by
-    use g' i
-    exact (hg i).symm
-  conv at h => enter [1, 2, i] ; rw [←(hg' i).choose_spec]
-
--/
-
-
-
-
-
-
-def cartesian_product_succ (A : Type*) (n : ℕ) (α : Fin (n + 1) → Finset A) :
-    Finset.univ (α := (j : Fin n) → { x // x ∈ α (Fin.castSucc j)}) ×ˢ Finset.univ (α:=(α (Fin.last n))) ≃
-    Finset.univ (α := (j : Fin (Nat.succ n)) → { x // x ∈ α j}) where
-  toFun := fun ⟨⟨a, b⟩, c⟩ => {
-    val := fun i => by
-      by_cases ↑i < n
-      · exact a ⟨↑i, h⟩
-      · exact ⟨b, by {
-        rw [show i = Fin.last n by
-          unfold Fin.last
-          rw [@Fin.eq_mk_iff_val_eq]
-          obtain ⟨i, hi⟩ := i
-          exact Nat.eq_of_lt_succ_of_not_lt hi h
-        ]
-        obtain ⟨b, hb⟩ := b
-        simpa
-      }⟩
-    property := by simp
-  }
-  invFun := fun ⟨f, _⟩ => {
-    val := {
-      fst := fun i => f (Fin.castSucc i)
-      snd := f (Fin.last n)
-    }
-    property := by simp
-  }
-  left_inv := by
-    rintro ⟨⟨_, _⟩, _⟩ ; simp
-  right_inv := by
-    rintro ⟨f, hf⟩
-    simp
-    ext i
-    split_ifs with h
-    · simp
-    · simp only at h
-      simp ; rw [← Fin.eq_last_of_not_lt h]
-
-#check Finset.prod_sum
-
-theorem product_of_sum_is_sum_of_product (A : Type*) [DecidableEq A] (n : ℕ) (α : Fin n → Finset A) (f : Fin n → A → R) :
-    ∏ i : Fin n, ∑ a : α i, f i a = ∑ a in Finset.univ (α:=((j : Fin n) → α j)), ∏ i : Fin n, f i ((a : ((j : Fin n) → α j)) i) := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [Fin.prod_univ_castSucc, ih]
-    --rw [@Finset.mul_sum]
-    rw [@Finset.sum_mul_sum]
-    --Finset.sum_of_funct_is_sum_over_equiv A (fun p => (∏ i : Fin n, f (Fin.castSucc i) ↑(p.1 i)) * f (Fin.last n) ↑p.2) (cartesian_product_succ A n α)
-    --have h := Finset.sum_of_funct_is_sum_over_equiv _ Finset.univ _ (cartesian_product_succ A n α)
-    rw [Finset.sum_in_eq_sum_type]
-
-    rw [Finset.sum_of_funct_is_sum_over_equiv _ Finset.univ _ (cartesian_product_succ A n α)]
-    congr
-    · sorry
-    · sorry
-    ·
-
-    unfold Finset.sum
-
-
-    have h : (cartesian_product_succ A n α) ''
-        (Finset.univ (α:={ x // x ∈ (Finset.univ (α:=((j : Fin n) →
-        { x // x ∈ α (Fin.castSucc j) }))) ×ˢ (Finset.univ (α:={ x // x ∈ α (Fin.last n) } )) })) =
-        Set.univ (α:={ x // x ∈ Finset.univ }) := by
-      ext ⟨x, hx⟩
-      simp
-
-
-    congr
-    · --rw [← @Finset.coe_sort_coe]
-      --simp
-      dsimp
-
-    sorry
-
-    --rw [← Fin.prod_univ_castSucc f]
-
-
-def cartesian_product_succ' (A : Type*) (n : ℕ) (α : Fin (Nat.succ n) → Finset A) :
-    (Π j : Fin n, α ↑j) ×ˢ { x // x ∈ α (Fin.last (Nat.succ n))} ≃ (Π j : Fin (Nat.succ n), α ↑j) := by sorry
-
-
-theorem product_of_sum_is_sum_of_produc't (A : Type*) (n : ℕ) (α : Fin n → Finset A) (f : Fin n → A → R) :
-    ∏ i : Fin n, ∑ a : α i, f i a = ∑ a : (Π j : Fin n, α j), ∏ i : Fin n, f i (a i) := by
-  induction n with
-  | zero => sorry
-  | succ n ih =>
-    rw [Fin.prod_univ_succ, ih]
-    rw [Finset.sum_mul_sum]
-    simp
-
-    conv =>
-      enter [1, 2, p]
-      rw [← Fin.prod_univ_succ]
-    rw [← Fin.prod_univ_succ]
-
-
-
-/-
-lemma gen_of_pow :
-    ∀ x ∈ ((Δ R,G) ^ (n + 1) : Ideal (MonoidAlgebra R G)),
-    ∃ m, ∃ c : Fin m → R, ∃ f : Fin m → Fin (n + 1) → {g : G | g ≠ 1},
-    x = ∑ i : Fin m, c i • (∏ j : Fin (n + 1), (MonoidAlgebra.single (f i j : G) (1:R) - 1)) := by
-  induction n with
-  | zero => simp ; rw [zero_add] ; simp ; sorry
-  | succ n ih =>
-    intro x hx
-    rw [Nat.succ_eq_add_one] at hx ⊢
-    rw [show n + 1 + 1 = n + 2 from rfl] at hx ⊢
-    rw [@Finset.pow_eq_prod_const] at hx
-    rw [@Finset.prod_range] at hx
-    rw [@Fin.prod_univ_succ] at hx
-    rw [← Finset.prod_range (n := n + 1) (fun _ => (Δ R,G)), ← Finset.pow_eq_prod_const] at hx
-    rw [← Ideal.span_eq ((Δ R,G) ^ (n + 1) : Ideal (MonoidAlgebra R G))] at hx
-    have h' : (Δ R,G) * Ideal.span ↑((Δ R,G) ^ (n + 1)) = Ideal.span ↑(Δ R,G) * Ideal.span ↑((Δ R,G) ^ (n + 1)) := by simp
-    rw [h'] at hx
-    rw [Ideal.span_mul_span] at hx
-    rw [← Ideal.submodule_span_eq] at hx
-    rw [ht] at hx
-    rw [@mem_span_set'] at hx
-    obtain ⟨n_1, ⟨f, ⟨g, h⟩⟩⟩ := hx
-    let g₁ : Fin n_1 → MonoidAlgebra R G := fun i => by
-      obtain ⟨y, hy⟩ := g i
-      rw [@Set.mem_setOf] at hy
-      exact hy.choose
-    let g₂ : Fin n_1 → MonoidAlgebra R G := fun i => by
-      obtain ⟨y, hy⟩ := g i
-      rw [Set.mem_setOf] at hy
-      exact hy.choose_spec.2.choose
-    have hg (i : Fin n_1) : g i = g₁ i * g₂ i := by
-      dsimp only [Set.mem_setOf_eq, Set.coe_setOf, eq_mp_eq_cast, cast_eq]
-      obtain ⟨y, hy⟩ := g i
-      rw [Set.mem_setOf] at hy
-      rw [hy.choose_spec.2.choose_spec.2]
-    conv at h => enter [1,2,i] ; rw [hg]
-    let g₂e : Fin n_1 → ℕ := fun i => by
-      specialize ih (g₂ i)
-      obtain ⟨y, hy⟩ := g i
-      rw [Set.mem_setOf] at hy
-      have h := hy.choose_spec.2.choose_spec.1
-      rw [hy.choose_spec.2.choose_spec.1]
-
--/
-
-
-
-
-
-
-
-example (w : MonoidAlgebra R G) (x y: Set (MonoidAlgebra R G)) (h : x ⊆ y) : w • x ⊆ w • y := by
-  exact Set.smul_set_mono h
 end Pointwise
 
-
 end Quotients
-
-lemma aser (f : MonoidAlgebra R G) (a₁ : ↑(f.support \ {1})) : ↑a₁ ∈ {g | g ≠ (1:G)} := by
-  obtain ⟨_, ha⟩ := a₁
-  simp at ha
-  simp [ha] at *
-
-lemma aser' (f : MonoidAlgebra R G) (a₁ : ↑(f.support \ {1})) (a : G) : (↑a₁)⁻¹ * a ∈ {g | g ≠ (1:G)} := by
-  obtain ⟨a', ha'⟩ := a₁
-  simp at ha'
-  simp [ha']
-
-example (f g : G →₀ R) (a : G) : (f - g) a = f a - g a := by
-  exact rfl
-
-example (f g : MonoidAlgebra R G) (a : G) : (f - g) a = f a - g a := by
-  exact rfl
-
-example (a : G) : (MonoidAlgebra.single a (1:R) - MonoidAlgebra.single (1:G) (1:R)) a = MonoidAlgebra.single a (1:R) a - MonoidAlgebra.single (1:G) (1:R) a :=
-  by rfl
-
-lemma l123 (a k : G) : (MonoidAlgebra.single k (1:R) - 1) a = MonoidAlgebra.single k (1:R) a - MonoidAlgebra.single (1:G) (1:R) a := by
-  rfl
-
-
-lemma logic {A B : Prop} (h : A ∨ B) (h₁ : ¬B) : A := by
-  cases h with
-  | inl h₂ => assumption
-  | inr h₂ => exfalso ; apply h₁ h₂
-
-
-example (α : Finset G) (f : G → MonoidAlgebra R G) (a : G) : (∑ i in α, f i) a = ∑ i in α, f i a := by
-  exact Finset.sum_apply' a
-
-example (k a : G) (h : a ≠ k): MonoidAlgebra.single k (1:R) a = 0 := by exact
-  Finsupp.single_eq_of_ne (id (Ne.symm h))
-
-variable {R G} in
-lemma ase (f : MonoidAlgebra R G) (a₁ : G) (k : { x // x ∈ (f.support \ {1}) \ {a₁} }) : ↑k ≠ a₁ := by
-  obtain ⟨k', hk⟩ := k
-  simp at hk
-  simp [hk]
-
-lemma asy (F : Set G) (a x : G) (h : a ∉ F) (hx : x ∈ F): a ≠ x := by
-  exact Ne.symm (ne_of_mem_of_not_mem hx h)
-
-lemma ase' (f : MonoidAlgebra R G) (a₁ : { x // x ∈ f.support}) (h1 : 1 ∉ f.support) : (1:G) ≠ a₁ :=
-  asy G f.support 1 a₁.val h1 a₁.property
-
-
-
-lemma asd (f : MonoidAlgebra R G) (a₁ : G) (h₁ : a₁ ≠ 1) :
-    ∑ k in f.support \ {1}, f k • (MonoidAlgebra.single k (1:R) - 1) a₁ = f a₁ • (MonoidAlgebra.single a₁ (1:R) - 1) a₁:= by
-  conv =>
-    enter [1,2,k,2]
-    rw [show (MonoidAlgebra.single (k:G) (1:R) - 1) a₁ = MonoidAlgebra.single (k:G) (1:R) a₁ - MonoidAlgebra.single (1:G) (1:R) a₁ from rfl]
-  by_cases a₁ ∉ f.support \ {1}
-  · rw [finseter]
-    have h' := h
-    simp at h ; apply not_or_of_imp at h ; simp at h
-    conv =>
-      enter [1,2,x,2]
-      rw [Finsupp.single_eq_of_ne (Ne.symm h₁)]
-      rw [Finsupp.single_eq_of_ne ((ne_of_mem_of_not_mem x.property h'))]
-      rw [sub_zero]
-    simp
-    exact Or.inl <| logic h h₁
-  · rw [show f.support \ {1} = (f.support \ {1}) ∪ {a₁} by
-      simp at * ; assumption
-    ]
-    rw [show ∑ k in (f.support \ {1}) ∪ {a₁} , f k • (MonoidAlgebra.single (k:G) (1:R) a₁ - MonoidAlgebra.single (1:G) (1:R) a₁) =
-        (∑ k in (f.support \ {1}) \ {a₁}, f k • (MonoidAlgebra.single (k:G) (1:R) a₁ - MonoidAlgebra.single (1:G) (1:R) a₁)) + ∑ k in {a₁}, f k • (MonoidAlgebra.single (k:G) (1:R) a₁ - MonoidAlgebra.single (1:G) (1:R) a₁) by
-      rw [Finset.sum_union_is_right_and_sdiff]
-    ]
-    rw [finseter]
-    simp at h
-    obtain ⟨_,h₂⟩ := h
-    conv =>
-      enter [1,1,2,k,2]
-      rw [Finsupp.single_eq_of_ne (ase f a₁ k), Finsupp.single_eq_of_ne (Ne.symm h₂), sub_zero]
-    simp
-    rw [show (MonoidAlgebra.single a₁ (1:R) - 1) a₁ = (MonoidAlgebra.single a₁ 1 a₁ - MonoidAlgebra.single (1:G) (1:R) a₁) from rfl]
-    simp [Finsupp.single_eq_of_ne]
-
-lemma finsetsing (a : G) (f : MonoidAlgebra R G) : a ∉ f.support \ {a} := by
-  simp
-
-lemma asd' (f : MonoidAlgebra R G) (hf : f ∈ Δ R,G) :
-    ∑ k in f.support \ {1}, f k • (MonoidAlgebra.single k (1:R) - 1) 1 = f 1 := by
-  rw [MonoidAlgebra.one_def]
-  rw [finseter]
-  conv =>
-    enter [1, 2, k, 2]
-    rw [show (MonoidAlgebra.single (k:G) (1:R) - MonoidAlgebra.single (1:G) (1:R)) 1 = MonoidAlgebra.single (k:G) (1:R) (1:G) - MonoidAlgebra.single (1:G) 1 1 by rfl]
-    simp
-    rw [Finsupp.single_eq_of_ne ((ne_of_mem_of_not_mem k.property (finsetsing 1 f)))]
-  rw [← finseter ↑(f.support \ {1}) (fun k => f ↑k • (0 - 1))]
-  simp
-  by_cases 1 ∈ f.support
-  · rw [show f 1 = ∑ x in {1}, f x from (Finset.sum_singleton (fun x => f x) 1).symm]
-    rw [@neg_eq_iff_add_eq_zero]
-    rw [← Finset.sum_union_is_right_and_sdiff]
-    rw [show f.support ∪ {1} = f.support from Finset.union_eq_left.mpr <| Finset.singleton_subset_iff.mpr h]
-    rwa [← mem]
-  · rw [show f.support \ {1} = f.support from Finset.sdiff_singleton_eq_self h]
-    rw [@Finsupp.not_mem_support_iff] at h
-    rwa [h, neg_eq_zero, ← mem]
-
-
-example (f : MonoidAlgebra R G) (a k : G): f k • (MonoidAlgebra.single k (1:R) - 1) a = (f k • (MonoidAlgebra.single k (1:R) - 1)) a := by rfl
-
-
-theorem mul_def (f g : MonoidAlgebra R G) (hf : f ∈ Δ R,G) (hg : g ∈ Δ R,G) :
-    (f * g) x = ∑ a₁ in f.support \ {1}, ((f a₁ * g (a₁⁻¹ * x)) • (MonoidAlgebra.single a₁ (1:R) - 1) * (MonoidAlgebra.single (a₁⁻¹ * x) (1:R) - 1)) x := by
-  rw [AugmentationIdeal'.AugmentationMap.mul_def' (f : MonoidAlgebra R G) (g : MonoidAlgebra R G) x]
-  conv =>
-    enter [1,2,a₁]
-    rw [Basis.mem_is_linearcomb_of_basis_singles f hf, Basis.mem_is_linearcomb_of_basis_singles g hg]
-    rw [Finset.sum_apply', Finset.sum_apply']
-  rw [finseter]
-  conv =>
-    enter [1,2,a₁,1,2,k]
-    rw [show (f k • (MonoidAlgebra.single k (1:R) - 1)) a₁ = f k • (MonoidAlgebra.single k (1:R) - 1) a₁ from rfl]
-  conv =>
-    enter [1,2,a₁,2,2,k]
-    rw [show (g k • (MonoidAlgebra.single k (1:R) - 1)) ((↑a₁)⁻¹ * x) = g k • (MonoidAlgebra.single k (1:R) - 1) ((↑a₁)⁻¹ * x) from rfl]
-
-  by_cases 1 ∉ f.support
-  conv =>
-    enter [1,2,a₁]
-    rw [asd f a₁ (asy G f.support 1 a₁.val h a₁.property).symm]
-
-
-#check QuotientGroup.quotientKerEquivRange
-
-variable (H₁ H₂ : Type*) [Group H₁] [AddGroup H₂]
-#check H₁ ≃* Multiplicative H₂
 
 end AugmentationIdeal
