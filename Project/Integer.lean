@@ -53,8 +53,24 @@ instance quot_finite (n : ℕ) [Fintype G] : Finite (quotNatOverSucc ℤ G (n+1)
 end Quotients
 
 
+theorem t : Additive G ≃+ quotNatOverSucc ℤ G 1 := by sorry
+theorem t' (n : ℕ) : quotNatOverSucc ℤ G 1 ≃+ quotNatOverSucc ℤ G n := by sorry
+theorem t'' (n : ℕ) : Additive G ≃+ quotNatOverSucc ℤ G n := t.trans (t' n)
+
+
 def basis_hom (f : MonoidAlgebra ℤ G) : G := by
   exact ∏ a : ↑(f.support \ {1}), (Basis.support_to_basis_index f a) ^ (f a)
+
+variable (G) in
+def homit : (Δ ℤ,G) →+ Additive G where
+  toFun := fun ⟨f, _⟩ => (∑ a : ↑(f.support \ {1}), f a • Additive.ofMul (Basis.support_to_basis_index f a : G))
+  map_zero' := by simp only [Finsupp.support_zero, Finset.univ_eq_attach, Finsupp.coe_zero,
+    Pi.zero_apply, ne_eq, Set.mem_setOf_eq, zero_smul, Finset.sum_const_zero]
+  map_add' f g := by
+    simp only [Finset.univ_eq_attach, ne_eq, Set.mem_setOf_eq]
+    sorry
+
+lemma ker : (homit G).ker = nrpow_addsubgroup_of_npow ℤ G 1 1 := by sorry
 
 lemma sd (f g : Δℤ G) : basis_hom (f * g) = 1 := by
   unfold basis_hom

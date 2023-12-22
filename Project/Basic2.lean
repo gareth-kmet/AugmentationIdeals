@@ -885,14 +885,8 @@ theorem quot_aug_finite_ord (n : ℕ) (x : quotNatOverSucc R G (n+1)) : IsOfFinA
   rw [← @addOrderOf_pos_iff]
   exact quot_aug_finite_ord' n x
 
-instance quot_torsion : AddMonoid.IsTorsion (quotNatOverSucc R G (n+1)) := by
-  have : ¬(∃ x : quotNatOverSucc R G (n+1), ¬IsOfFinAddOrder x) := by
-    rw [@not_exists_not]
-    intro x ; exact quot_aug_finite_ord n x
-  contrapose this
-  rw [←AddMonoid.not_isTorsion_iff]
-  simp only [not_exists, not_not, not_forall]
-  exact this
+instance quot_torsion : AddMonoid.IsTorsion (quotNatOverSucc R G (n+1)) :=
+  fun x => quot_aug_finite_ord n x
 
 lemma ht : ⋃ s ∈ ((Δ R,G) : Set (MonoidAlgebra R G)), ⋃ t ∈ (((Δ R,G) ^ (n + 1) : Ideal (MonoidAlgebra R G)) : Set (MonoidAlgebra R G)), {s * t} =
     {s * t | (s ∈ ↑(Δ R,G)) (t ∈ ↑((Δ R,G) ^ (n + 1) : Ideal (MonoidAlgebra R G)))} := by
