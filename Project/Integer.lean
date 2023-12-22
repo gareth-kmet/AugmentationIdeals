@@ -16,8 +16,13 @@ scoped notation "Δℤ" G => integerAugmentationIdeal G
 
 variable {G}
 
+
+
+
+
 def basis_hom (f : MonoidAlgebra ℤ G) : G := by
   exact ∏ a : ↑(f.support \ {1}), (Basis.support_to_basis_index f a) ^ (f a)
+
 
 lemma sd (f g : Δℤ G) : basis_hom (f * g) = 1 := by
   unfold basis_hom

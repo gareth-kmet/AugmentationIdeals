@@ -199,6 +199,13 @@ lemma sum_of_funct_is_sum_over_image'' (β : Finset G) (γ : G → R) (φ : G �
   simp only [implies_true]
   assumption
 
+instance (A : Type*) (β : Finset G) (φ : G ≃ A) : Finite (φ '' β) := Finite.Set.finite_image ↑β ↑φ
+noncomputable instance (A : Type*) (β : Finset G) (φ : G ≃ A) : Fintype (φ '' β) := Fintype.ofFinite ↑(↑φ '' ↑β)
+
+lemma sum_of_funct_is_sum_over_equiv (A : Type*) [DecidableEq A] (β : Finset G) (γ : G → R) (φ : G ≃ A) :
+    ∑ a in β, γ a = ∑ b in (φ '' β).toFinset, γ (φ.symm b) := by
+  simp
+
 lemma sum_in_eq_sum_type {A : Type*} (α : Finset A) (f : A → R) : ∑ a in α, f a = ∑ a : α, f ↑a := by
   rw [← Finset.sum_attach]
   simp
