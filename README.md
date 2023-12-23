@@ -18,7 +18,7 @@ This project requires knowledge of group theory, ring theory, knowledge about gr
 torsions of groups.
 </p>
 
-**NOTES**: This project assumes that the group is communative although the thesis does not, and in fact it the focus of the thesis when the group is
+**NOTES**: This project assumes that the group is communative although the thesis does not, and in fact it is the focus of the thesis when the group is
 not communative. This choice was made to make some of the proofs easier but also since `Pow (Ideal (MonoidAlgebra R G)) ℕ` is no longer defined when 
 `G` is non-abelian. This project also assumes that the ring has no zero divisors to make proofs easier.
 
@@ -27,7 +27,7 @@ not communative. This choice was made to make some of the proofs easier but also
 
 This project is split into 5 files *AugmentationMap*, *Basic*, *Integer*, *Lemmas* and *IdealNSMul*. 
 * *AugmentationMap* includes theorems and lemmas, alongside the definition, of the `AugmentationMap` for
-    a given communative group and communative ring
+    a given group and ring, neither needing to be communative
 * *Basic* defines the `AugmentationIdeal` for generic communative groups and generic communative rings.
     It also conatins all the theorems and lemmas
 * *Integer* contains some proofs about the quotients of powers of the `AugmentationIdeal` in the case of the integer ring
@@ -59,9 +59,10 @@ The main definition and theorems of this project are found in the three files, *
 *AugmentationIdeal.AugmentationMap*
 
 * `AugmentationIdeal.AugmentationMap` defines the ring homorphism that sends a `MonoidAlgebra` to the sum of its
-  `R` coefficients
+  `R` coefficients. This definition requires that the ring has no zero divisors but _not_ that the ring is communative.
+* `AugmentationIdeal'.AugmentationMap` defines the equivalent noncomputable ring homorphism using `MonoidAlgebra.lift`.
+  This definition requires that the ring is communative but _not_ that it must have no zero divisors
 * `MonoidAlgebra.mul_def'` gives an alternative definition to the multiplication of `MonoidAlgebra` such that
-   `f*g a = ∑ a in G, ∑ h in G, f h * g (h⁻¹ * a)`
 
 *AugmentationIdeal.Integer*
 

@@ -6,22 +6,22 @@ import AugmentationIdeal.Lemmas
 /-!
 ## Augmentation Map
 
-This file defines the Augmentation Map of the MonoidAlgebra of a group and communative ring.
-It defines both a noncomputable definition (use `MonoidAlgebra.lift`) and a computable version. It also
-defines a different definition for multiplication of `MonoidAlgebra`
+This file defines the Augmentation Map of the MonoidAlgebra of a generic group and ring
+It defines both a noncomputable definition (using `MonoidAlgebra.lift`) when the ring is communative and a
+computable version for generic rings. It also defines a different definition for multiplication of `MonoidAlgebra`
 
 ## Main definitions
 
 * `AugmentationIdeal.AugmentationMap` defines the ring homorphism that sends a `MonoidAlgebra` to the sum of its
-  `R` coefficients
+  `R` coefficients. This definition requires that the ring has no zero divisors but _not_ that the ring is communative.
+* `AugmentationIdeal'.AugmentationMap` defines the equivalent noncomputable ring homorphism using `MonoidAlgebra.lift`.
+  This definition requires that the ring is communative but _not_ that it must have no zero divisors
 * `MonoidAlgebra.mul_def'` gives an alternative definition to the multiplication of `MonoidAlgebra` such that
    `f*g a = ∑ a in G, ∑ h in G, f h * g (h⁻¹ * a)`
 
 ## Future work
 
-* generalize to non-communative rings as much as possible
 * remove the `NoZeroDivisors R` variable
-
 -/
 
 
@@ -29,9 +29,14 @@ open BigOperators Classical
 
 variable {R G : Type*}
 
-namespace AugmentationIdeal
+namespace AugmentationIdeal'
+/-!
+This section defines the augmentation map in the case that the ring is communative using
+the `MonoidAlgebra.lift` method. Note that if the ring is not a comm ring then
+`MonoidAlgebra.lift` is no longer defined, hence why this isn't the main definition used
+-/
 
-variable [Group G] [CommRing R] [NoZeroDivisors R]
+variable [Group G] [CommRing R]
 
 noncomputable def AugmentationMap : (MonoidAlgebra R G) →+* R :=
   MonoidAlgebra.lift R G R {
@@ -52,7 +57,7 @@ lemma AugmentationMap.fun_def'' (f : MonoidAlgebra R G) :
     AugmentationMap f = ∑ a : f.support, (f :  G →₀ R) a := by
   simp [fun_def', Finset.sum_attach]
 
-end AugmentationIdeal
+end AugmentationIdeal'
 
 namespace MonoidAlgebra
 
@@ -256,7 +261,7 @@ theorem mul_def' : f * g = ∑ a₁ in mul_support_def f g, MonoidAlgebra.single
 
 end MonoidAlgebra
 
-namespace AugmentationIdeal'.AugmentationMap
+namespace AugmentationIdeal.AugmentationMap
 
 variable [Group G] [Ring R] [NoZeroDivisors R]
 variable (f g : MonoidAlgebra R G)
@@ -413,7 +418,9 @@ theorem mulHom (f g : MonoidAlgebra R G): ∑ a in (f * g).support, (f * g) a = 
 
 end AugmentationMap
 
-variable [Group G] [CommRing R] [NoZeroDivisors R]
+section definition
+
+variable [Group G] [Ring R] [NoZeroDivisors R]
 
 -- A computable version of `AugmentationIdeal.AugmenationMap`
 def AugmentationMap : (MonoidAlgebra R G) →+* R where
@@ -433,12 +440,22 @@ def AugmentationMap : (MonoidAlgebra R G) →+* R where
 
 @[simp]
 lemma AugmentationMap.fun_def (f : MonoidAlgebra R G) :
-    AugmentationMap f = AugmentationIdeal.AugmentationMap f := by
-  simp [AugmentationMap, AugmentationIdeal.AugmentationMap.fun_def']
+    AugmentationMap f = ∑ a in ↑f.support, (f : G →₀ R) a := rfl
 
-@[simp]
+end definition
+
+variable [Group G] [CommRing R] [NoZeroDivisors R]
+
+lemma AugmentationMap.fun_def' (f : MonoidAlgebra R G) :
+    AugmentationMap f = AugmentationIdeal'.AugmentationMap f := by
+  simp [AugmentationMap, AugmentationIdeal'.AugmentationMap.fun_def']
+
 lemma AugmentationMap.eq :
-    AugmentationMap (R:=R) (G:=G) = AugmentationIdeal.AugmentationMap := by
-  ext <;> simp
+    AugmentationMap (R:=R) (G:=G) = AugmentationIdeal'.AugmentationMap := by
+  ext
+  · simp only [RingHom.coe_comp, Function.comp_apply, MonoidAlgebra.singleOneRingHom_apply,
+    ZeroHom.toFun_eq_coe, AddMonoidHom.toZeroHom_coe, Finsupp.singleAddHom_apply, fun_def']
+  · simp only [MonoidHom.coe_comp, MonoidHom.coe_coe, Function.comp_apply, MonoidAlgebra.of_apply,
+    fun_def']
 
-end AugmentationIdeal'
+end AugmentationIdeal

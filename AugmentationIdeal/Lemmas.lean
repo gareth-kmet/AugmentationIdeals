@@ -299,7 +299,7 @@ end Finset
 
 namespace Finsupp
 
-variable [CommRing R]
+variable [Ring R]
 variable (f g : G →₀ R)
 
 lemma sum_of_sum_support_eq_sum_of_union_support : (∑ a in (f+g).support, (f+g) a) = (∑ a in ((f.support ∪ g.support)), (f + g) a) := by
@@ -335,7 +335,9 @@ lemma sum_inter_support_eq_sum_parts : (∑ a in ((f.support ∩ g.support)), (f
 theorem sum_coefficents_is_add_hom : (∑ a in (f+g).support, (f+g) a) = (∑ a in f.support, f a) + (∑ a in g.support, g a) := by
   rw [sum_of_sum_support_eq_sum_of_parts, sum_inter_support_eq_sum_parts]
   simp only [Finsupp.add_apply, Finset.sum_add_distrib]
-  ring
+  rw [sub_add_eq_sub_sub]
+  simp only [← add_assoc]
+  rw [sub_right_comm, add_sub_assoc, add_add_sub_cancel, add_sub_assoc, add_add_sub_cancel]
 
 lemma mul_outside_supp_is_zero : ∑ u in (f.support \ g.support), f u * g u = 0 := by
   suffices ∀ u ∈ (f.support \ g.support), f u * g u = 0 from Finset.sum_eq_zero this
@@ -345,8 +347,11 @@ lemma mul_outside_supp_is_zero : ∑ u in (f.support \ g.support), f u * g u = 0
   exact mul_eq_zero_of_right (f u) hu'
 
 lemma outside_supp_mul_is_zero : ∑ u in (g.support \ f.support), f u * g u = 0 := by
-  conv => enter [1, 2, u] ; rw [mul_comm]
-  exact mul_outside_supp_is_zero g f
+  suffices ∀ u ∈ (g.support \ f.support), f u * g u = 0 from Finset.sum_eq_zero this
+  intro u hu
+  rw [Finset.mem_sdiff] at hu ; obtain ⟨_, hu'⟩ := hu
+  replace hu' : f u = 0 := Finsupp.not_mem_support_iff.mp hu'
+  exact mul_eq_zero_of_left hu' (g u)
 
 lemma inter_supp_mul_is_union_supp_mul : ∑ u in (f.support ∩ g.support), f u * g u = (∑ u in (f.support ∪ g.support), f u * g u) := by
   simp only [Finset.union_sum_decomp, mul_outside_supp_is_zero, add_zero, outside_supp_mul_is_zero]

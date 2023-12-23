@@ -39,7 +39,7 @@ This file also does not cover the analagous proofs for `quotPolynomial` the quot
 
 ## Future work
 
-* generalize non communative groups
+* generalize to non communative groups
 * remove the `NoZeroDivisors R` variable
 * complete the other sections
 * complete the analogous results for `(Δ R,G) ⧸ (Δ R,G) ^ n`
@@ -50,14 +50,14 @@ open BigOperators Classical
 
 variable (R G : Type*) [CommGroup G] [CommRing R] [NoZeroDivisors R]
 
-noncomputable def AugmentationIdeal : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal.AugmentationMap (R:=R) (G:=G))
+def AugmentationIdeal : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal.AugmentationMap (R:=R) (G:=G))
 
 -- A computable version of AugmentationIdeal
-def AugmentationIdeal' : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal'.AugmentationMap (R:=R) (G:=G))
+noncomputable def AugmentationIdeal' : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal'.AugmentationMap (R:=R) (G:=G))
 
 lemma AugmentationIdeal'.eq : AugmentationIdeal' R G = AugmentationIdeal R G := by
   unfold AugmentationIdeal' AugmentationIdeal
-  simp only [AugmentationMap.eq]
+  simp only [AugmentationIdeal.AugmentationMap.eq]
 
 
 namespace AugmentationIdeal
@@ -68,7 +68,7 @@ variable {R G} in
 lemma mem (f : MonoidAlgebra R G) : f ∈ (Δ R,G) ↔ ∑ a in f.support, f a = 0 := by
   unfold AugmentationIdeal
   rw [@RingHom.mem_ker]
-  rw [AugmentationMap.fun_def']
+  simp only [AugmentationMap.fun_def]
 
 
 noncomputable section Quotients
@@ -146,7 +146,7 @@ lemma basis_elements_are_in_set (g : G) : (MonoidAlgebra.single g (1 : R)) - (1 
   rw [RingHom.mem_ker, map_sub]
   by_cases (1:R) = 0
   · simp only [h, Finsupp.single_zero, map_zero, map_one, sub_self]
-  · rw [map_one, AugmentationMap.fun_def'', Finsupp.support_single_ne_zero]
+  · rw [map_one, AugmentationMap.fun_def, Finsupp.support_single_ne_zero]
     simp only [Finset.univ_unique, ne_eq, Finset.sum_singleton, Finset.default_singleton,
       Finsupp.single_eq_same, sub_self]
     assumption'
@@ -178,7 +178,7 @@ theorem funct_is_linearcomb_of_basis_with_offset (f : G →₀ R) : f =
         MonoidAlgebra.single 1 (∑ a in f.support, (f a)) := by
       rw [MonoidAlgebra.one_def, Finsupp.sum_single_is_single_sum f 1]
     _ = (∑ a in f.support, (f a) • ((MonoidAlgebra.single a (1 : R)) - (1 : MonoidAlgebra R G))) +
-        MonoidAlgebra.single 1 (AugmentationMap f) := by rw [AugmentationMap.fun_def']
+        MonoidAlgebra.single 1 (AugmentationMap f) := by rw [AugmentationMap.fun_def]
 
 lemma mem_is_linearcomb_of_basis_singles' (f : MonoidAlgebra R G) (h : f ∈ Δ R,G) :
     (f : G →₀ R) = (∑ a in f.support, (f a) • ((MonoidAlgebra.single a (1 : R)) - (1 : MonoidAlgebra R G))) := by
