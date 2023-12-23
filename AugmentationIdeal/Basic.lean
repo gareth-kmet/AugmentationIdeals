@@ -5,7 +5,7 @@ import AugmentationIdeal.AugmentationMap
 import Mathlib.GroupTheory.Torsion
 
 /-!
-# Augmentation Ideal
+## Augmentation Ideal
 
 This file defines the Augmentation Ideal of the MonoidAlgebra of a communative group and communative ring.
 It then defines the quotients of an Augmentation Ideal and its powers
@@ -26,9 +26,9 @@ and the first section of Chapter 1.
   natural numbers `n` and `r`
 * `AugmentationIdeal.quotNatOverSucc` defines the quotient of `(Δ R,G) ^ n ⧸ (Δ R,G) ^ (n + 1)`
 * `AugmentationIdeal.Quotients.quot_torsion` defines a `AddMonoid.IsTorsion` on `(Δ R,G) ^ n ⧸ (Δ R,G) ^ (n + 1)`
-  for any `n > 0`
+  for any `n > 0` (i.e., any element of the quotient has finite order)
 * `AugmentationIdeal.npow_mem.linearcomb_prod_basis` states that any element of `(Δ R,G) ^ n` is a linear combination
-  of `∏ i : Fin n, Monoid.of gᵢ - 1` with `R` coefficients for `n > 0`
+  of `∏ i : Fin n, MonoidAlgebra.of gᵢ - 1` with `R` coefficients for `n > 0`
 
 ## Implementation
 

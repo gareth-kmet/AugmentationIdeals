@@ -4,9 +4,9 @@ Authors : Gareth Kmet
 import AugmentationIdeal.Lemmas
 
 /-!
-# Augmentation Map
+## Augmentation Map
 
-This file defines the Augmentation Map of the MonoidAlgebra of a communative group and communative ring.
+This file defines the Augmentation Map of the MonoidAlgebra of a group and communative ring.
 It defines both a noncomputable definition (use `MonoidAlgebra.lift`) and a computable version. It also
 defines a different definition for multiplication of `MonoidAlgebra`
 
@@ -15,11 +15,11 @@ defines a different definition for multiplication of `MonoidAlgebra`
 * `AugmentationIdeal.AugmentationMap` defines the ring homorphism that sends a `MonoidAlgebra` to the sum of its
   `R` coefficients
 * `MonoidAlgebra.mul_def'` gives an alternative definition to the multiplication of `MonoidAlgebra` such that
-   `(f*g) a = ∑ h in G, f h * g (h⁻¹ * a)`
+   `f*g a = ∑ a in G, ∑ h in G, f h * g (h⁻¹ * a)`
 
 ## Future work
 
-* generalize to non communative groups and non-communative rings
+* generalize to non-communative rings as much as possible
 * remove the `NoZeroDivisors R` variable
 
 -/
@@ -31,7 +31,7 @@ variable {R G : Type*}
 
 namespace AugmentationIdeal
 
-variable [CommGroup G] [CommRing R] [NoZeroDivisors R]
+variable [Group G] [CommRing R] [NoZeroDivisors R]
 
 noncomputable def AugmentationMap : (MonoidAlgebra R G) →+* R :=
   MonoidAlgebra.lift R G R {
@@ -60,7 +60,7 @@ namespace MonoidAlgebra
   Some Lemmas about multiplication within MonoidAlgebras
 -/
 
-variable [CommGroup G] [CommRing R] [NoZeroDivisors R]-- #TODO reduce
+variable [Group G] [Ring R] [NoZeroDivisors R]-- #TODO reduce
 variable (f g : MonoidAlgebra R G)
 
 lemma mul_def'' : f * g = ∑ a₁ in f.support, ∑ a₂ in g.support, MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂) := by
@@ -180,23 +180,23 @@ lemma gsupport_finset_card_eq_one (h : a₁⁻¹ * a ∈ g.support) : Finset.car
   exact gsupport_finset_nonempty g a₁ a h
 
 lemma mul_inner_sum_unecessary: Finset.card (gsupport_finset g a₁ a) * (f a₁ * g (a₁⁻¹ * a)) = f a₁ * g (a₁⁻¹ * a) := by
-
   by_cases a₁⁻¹ * a ∈ g.support
-  · rw [show Finset.card (gsupport_finset g a₁ a) = 1 from gsupport_finset_card_eq_one g a₁ a h] ; group
+  · rw [show Finset.card (gsupport_finset g a₁ a) = 1 from gsupport_finset_card_eq_one g a₁ a h]
+    simp only [Nat.cast_one, one_mul]
   · rw [Finsupp.not_mem_support_iff] at h
-    rw [h] ; group
+    rw [h] ; simp only [mul_zero]
 
 end mul_def'
 
-theorem mul_def' (a : G) : (f * g) a = ∑ a₁ in f.support, f a₁ * g (a₁⁻¹ * a) := by
+theorem mul_def'.at (a : G) : (f * g) a = ∑ a₁ in f.support, f a₁ * g (a₁⁻¹ * a) := by
   rw [mul_def'', mul_def'.sum_gsupport_is_sum_gsupport, mul_def'.gsupport_gives_same_mul, mul_def'.sum_of_singles_of_a_at_a_is_sum_of_scalar_of_coeficients]
   conv => enter [1, 2, a₁] ; rw [mul_def'.mul_inner_sum_unecessary]
 
 lemma mul_def'.toFun : ↑(f * g) = fun a => ∑ a₁ in f.support, f a₁ * g (a₁⁻¹ * a) := by
-  ext ; exact mul_def' _ _ _
+  ext ; exact mul_def'.at _ _ _
 
 lemma mul_support_mem₁ : x ∈ (f * g).support ↔ x ∈ {x | ∑ a in f.support, f a * g (a⁻¹ * x) ≠ 0} := by
-  simp only [Finsupp.mem_support_iff, Set.mem_setOf_eq, mul_def']
+  simp only [Finsupp.mem_support_iff, Set.mem_setOf_eq, mul_def'.at]
 
 lemma mul_support_mem₂ : x ∈ (f*g).support → ∃ a ∈ f.support, g (a⁻¹ * x) ≠ 0 := by
   rw[mul_support_mem₁]
@@ -213,11 +213,52 @@ lemma mul_support_mem₃ : x ∈ (f*g).support → ∃ a ∈ f.support, a⁻¹ *
   use a ; constructor ; exact ha₁
   rwa [Finsupp.mem_support_iff]
 
+lemma mul_support_def'' : (f * g).support = {x | ∑ a in f.support, f a * g (a⁻¹ * x) ≠ 0} := by
+  ext x ; simp only [Finset.mem_coe, Set.mem_setOf_eq, mul_support_mem₁]
+
+noncomputable def mul_support_def : Finset G :=
+  Finset.subset_to_finset (A:=G) (s:=(f*g).support) (t:={x | ∑ a in f.support, f a * g (a⁻¹ * x) ≠ 0}) <| by
+    rw [mul_support_def'']
+
+lemma mul_support_def' : mul_support_def f g = (f * g).support := by
+  unfold mul_support_def ; unfold Finset.subset_to_finset
+  ext x ; rw [Set.Finite.mem_toFinset]
+  rw[mul_support_mem₁]
+
+theorem mul_def' : f * g = ∑ a₁ in mul_support_def f g, MonoidAlgebra.single a₁ (∑ a in f.support, f a * g (a⁻¹ * a₁)) := by
+  unfold MonoidAlgebra
+  ext a₁
+  rw [mul_def'.at]
+  rw [@Finset.sum_apply']
+  conv => rhs ; rw [Finset.sum_in_eq_sum_type]
+  let r : G → R := fun x => by
+    by_cases x = a₁
+    · exact ∑ a in f.support, f a * g (a⁻¹ * a₁)
+    · exact 0
+  have (x : mul_support_def f g) : r ↑x = (single (↑x) (∑ a in f.support, f a * g (a⁻¹ * x))) a₁ := by
+    dsimp only [dite_eq_ite]
+    by_cases ↑x = a₁
+    · simp only [Finsupp.single_eq_same, h, ite_true]
+    · rw [@Finsupp.single_apply]
+      simp only [h, ite_false]
+  conv => enter [2,2,x] ; rw [←this x]
+  conv => rhs ; rw [← Finset.sum_in_eq_sum_type]
+  dsimp only [dite_eq_ite]
+  rw [@Finset.sum_ite_eq']
+  by_cases a₁ ∈ mul_support_def f g
+  · simp only [h, ite_true]
+  · simp only [h, ite_false]
+    rw [mul_support_def', mul_support_mem₁] at h
+    simp only [ne_eq, Set.mem_setOf_eq, not_not] at h
+    assumption
+
+
+
 end MonoidAlgebra
 
 namespace AugmentationIdeal'.AugmentationMap
 
-variable [CommGroup G] [CommRing R] [NoZeroDivisors R]
+variable [Group G] [Ring R] [NoZeroDivisors R]
 variable (f g : MonoidAlgebra R G)
 
 namespace mulHom
@@ -317,13 +358,13 @@ lemma proof_1 : ∑ y in f.support, f y * ∑ b in Set.toFinset ((fun x => y⁻�
   conv =>
     enter [1, 2, x, 2, 1]
     dsimp ; rw [support_sdiff_equiv₂, support_sdiff_equiv₃ f g x]
-  conv => enter [1, 2, x] ; rw[mul_comm, Finset.sum_mul]
-  conv => enter [1, 2, x, 2, x] ; rw[mul_comm]
+  conv => enter [1, 2, x] ; rw[Finset.mul_sum]
+  conv => enter [1, 2, x, 2, x]
   suffices ∀ x : G, ∑ x_1 in Set.toFinset ((fun x_1 => x * x_1) '' ↑g.support \ ↑(f * g).support), f x * g (x⁻¹ * x_1) =
       ∑ x_1 in Set.toFinset ↑(⋃ x₂ ∈ f.support, (fun x_1 => x₂ * x_1) '' g.support.toSet) \ ↑(f * g).support, f x * g (x⁻¹ * x_1) by {
     conv => enter [1, 2, x] ; rw[this]
     rw [Finset.sum_comm]
-    conv => enter [1, 2, y] ; rw[← MonoidAlgebra.mul_def']
+    conv => enter [1, 2, y] ; rw[← MonoidAlgebra.mul_def'.at]
     suffices ∀ y ∈ Set.toFinset (⋃ x₂ ∈ f.support, (fun x_1 => x₂ * x_1) '' ↑g.support) \ (f * g).support, (f * g) y = 0 from Finset.sum_eq_zero this
     intro y hy ; rw [Finset.mem_sdiff] at hy
     obtain ⟨_, hy'⟩ := hy ; simp only [Finsupp.mem_support_iff, ne_eq, not_not] at hy'
@@ -356,7 +397,7 @@ lemma proof_2 : ∑ a in f.support, f a * ∑ x in g.support, g x =
 end mulHom
 
 theorem mulHom (f g : MonoidAlgebra R G): ∑ a in (f * g).support, (f * g) a = (∑ a in f.support, f a) * (∑ a in g.support, g a) := by
-  conv => enter [1, 2, a] ; rw [MonoidAlgebra.mul_def']
+  conv => enter [1, 2, a] ; rw [MonoidAlgebra.mul_def'.at]
   rw[Finset.sum_comm]
   conv => enter [1, 2, y] ; rw[Finset.mul_sum.symm]
   rw[Finset.sum_mul_sum_is_sum_sum_mul]
@@ -372,7 +413,7 @@ theorem mulHom (f g : MonoidAlgebra R G): ∑ a in (f * g).support, (f * g) a = 
 
 end AugmentationMap
 
-variable [CommGroup G] [CommRing R] [NoZeroDivisors R]
+variable [Group G] [CommRing R] [NoZeroDivisors R]
 
 -- A computable version of `AugmentationIdeal.AugmenationMap`
 def AugmentationMap : (MonoidAlgebra R G) →+* R where

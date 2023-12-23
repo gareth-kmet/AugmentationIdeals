@@ -9,7 +9,7 @@ import Mathlib.Data.Finsupp.Defs
 import Mathlib.Tactic
 
 /-!
-# Lemmas
+## Lemmas
 
 This file defines helpful lemmas surrounding `Finset` and `Finsupp`. These lemmas mainly foccus on the finite sums of
 different unions, sdiffs, and intersections and on the manipulation of supports.
@@ -282,11 +282,10 @@ lemma sum_equiv_sum_indexed_by_card' :
   rw [sum_in_eq_sum_type]
   exact sum_equiv_sum_indexed_by_card β γ
 
-variable (α β) [CommRing R''] in
+variable (α β) [Ring R''] in
 lemma sum_mul_sum_is_sum_sum_mul (φ ψ : A → R'') : (∑ a in α, ψ a) * (∑ b in β, φ b) = ∑ a in α, ∑ b in β, ψ a * φ b := by
-  conv => enter [2, 2, a] ; rw[Finset.mul_sum.symm , mul_comm]
-  conv => rhs ; rw[←Finset.mul_sum]
-  rw[mul_comm]
+  conv => enter [2, 2, a] ; rw[Finset.mul_sum.symm]
+  conv => rhs ; rw[←Finset.sum_mul]
 
 end Sum
 
