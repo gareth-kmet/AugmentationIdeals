@@ -1,7 +1,7 @@
 /-
 Authors : Gareth Kmet
 -/
-import Project.Helper
+import AugmentationIdeal.Lemmas
 
 /-!
 # Augmentation Map

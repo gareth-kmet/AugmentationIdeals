@@ -1,7 +1,7 @@
 /-
 Authors : Gareth Kmet
 -/
-import Project.Basic
+import AugmentationIdeal.Basic
 import Mathlib.GroupTheory.FiniteAbelian
 
 /-!

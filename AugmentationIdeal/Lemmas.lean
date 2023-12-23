@@ -9,7 +9,7 @@ import Mathlib.Data.Finsupp.Defs
 import Mathlib.Tactic
 
 /-!
-# Helper
+# Lemmas
 
 This file defines helpful lemmas surrounding `Finset` and `Finsupp`. These lemmas mainly foccus on the finite sums of
 different unions, sdiffs, and intersections and on the manipulation of supports.

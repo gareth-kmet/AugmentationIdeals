@@ -9,6 +9,6 @@ require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git"
 
 @[default_target]
-lean_lib «Project» {
+lean_lib «AugmentationIdeal» {
   -- add any library configuration options here
 }

@@ -1,7 +1,7 @@
 /-
 Authors : Gareth Kmet
 -/
-import Project.AugmentationMap
+import AugmentationIdeal.AugmentationMap
 import Mathlib.GroupTheory.Torsion
 
 /-!
