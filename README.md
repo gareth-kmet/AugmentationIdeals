@@ -20,7 +20,7 @@ torsions of groups.
 
 **NOTES**: This project assumes that the group is communative although the thesis does not, and in fact it is the focus of the thesis when the group is
 not communative. This choice was made to make some of the proofs easier but also since `Pow (Ideal (MonoidAlgebra R G)) ℕ` is no longer defined when 
-`G` is non-abelian. This project also assumes that the ring has no zero divisors to make proofs easier.
+`G` is non-abelian.
 
 
 # Project structure
@@ -59,10 +59,11 @@ The main definition and theorems of this project are found in the three files, *
 *AugmentationIdeal.AugmentationMap*
 
 * `AugmentationIdeal.AugmentationMap` defines the ring homorphism that sends a `MonoidAlgebra` to the sum of its
-  `R` coefficients. This definition requires that the ring has no zero divisors but _not_ that the ring is communative.
+  `R` coefficients. This definition does _not_ require any additional structure on the ring.
 * `AugmentationIdeal'.AugmentationMap` defines the equivalent noncomputable ring homorphism using `MonoidAlgebra.lift`.
-  This definition requires that the ring is communative but _not_ that it must have no zero divisors
+  This definition requires that the ring is communative.
 * `MonoidAlgebra.mul_def'` gives an alternative definition to the multiplication of `MonoidAlgebra` such that
+   `f*g a = ∑ a in G, ∑ h in G, f h * g (h⁻¹ * a)`
 
 *AugmentationIdeal.Integer*
 
@@ -87,3 +88,4 @@ Work should also be done to change all current definitions to use non-abelian gr
 * Submitted on Dec 22nd 2023
 * Updated on Dec 23rd 2023 to remove `CommGroup` and `CommGroup` from the `AugmentationMap`. (This was done in a new commit)
 * Updated on Dec 30th 2023 to remove `NoZeroDivisors` from the `AugmentationMap`. (This was done in a new commit)
+* Updated on Dec 30th 2023 to remove `NoZeroDivisors` from the `AugmentationIdeal`. (This was done in a new commit)

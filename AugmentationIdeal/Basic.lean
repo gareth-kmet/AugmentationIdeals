@@ -32,15 +32,13 @@ and the first section of Chapter 1.
 
 ## Implementation
 
-Although the thesis use ℤ for all its proofs, this file uses a generic communative ring. To get around some cases, an
-assumption is made that the ring has no zero divisors (isn't trivial), this should be removed in the future.
+Although the thesis use ℤ for all its proofs, this file uses a generic communative ring.
 
 This file also does not cover the analagous proofs for `quotPolynomial` the quotient of `(Δ R,G) ⧸ (Δ R,G) ^ n`
 
 ## Future work
 
 * generalize to non communative groups
-* remove the `NoZeroDivisors R` variable
 * complete the other sections
 * complete the analogous results for `(Δ R,G) ⧸ (Δ R,G) ^ n`
 
@@ -49,7 +47,7 @@ This file also does not cover the analagous proofs for `quotPolynomial` the quot
 open BigOperators Classical
 
 
-variable (R G : Type*) [CommGroup G] [CommRing R] [NoZeroDivisors R]
+variable (R G : Type*) [CommGroup G] [CommRing R]
 
 def AugmentationIdeal : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal.AugmentationMap (R:=R) (G:=G))
 
@@ -299,11 +297,11 @@ theorem linear_independent : LinearIndependent R (basis_def R G) := by
     rfl
   simp only [h'',Finset.sum_sub_distrib] at h'
   have h''' (x : { x // ¬x = 1 }) : f x • (MonoidAlgebra.single (1:G) (1:R)) i = 0 := by
-    simp only [ne_eq, smul_eq_mul, mul_eq_zero]
-    exact Or.inr <| by
-      rw [@Finsupp.single_apply_eq_zero]
-      intro hi''' ; exfalso
-      rw [@Set.mem_setOf] at hi ; exact hi hi'''
+    simp only [ne_eq, smul_eq_mul] --mul_eq_zero
+    suffices MonoidAlgebra.single 1 1 i = 0 from mul_eq_zero_of_right (f x) this
+    rw [@Finsupp.single_apply_eq_zero]
+    intro hi''' ; exfalso
+    rw [@Set.mem_setOf] at hi ; exact hi hi'''
   simp only [h'''] at h'
   simp only [ne_eq, smul_eq_mul, Finset.sum_const_zero, sub_zero] at h'
   have hs : s = s \ {⟨i,hi⟩} ∪ {⟨i,hi⟩} := by
@@ -326,14 +324,13 @@ theorem linear_independent : LinearIndependent R (basis_def R G) := by
   obtain ⟨_, hj₂⟩ := hj
   rw [@Finset.not_mem_singleton] at hj₂
   unfold MonoidAlgebra.single
-  rw [@mul_eq_zero]
-  exact Or.inr <| by
-    rw [@Finsupp.single_apply_eq_zero]
-    intro hj'
-    exfalso
-    apply hj₂
-    rw [@Subtype.ext_iff]
-    exact id hj'.symm
+  suffices (fun₀ | ↑j => 1) i = 0 from mul_eq_zero_of_right (f j) this
+  rw [@Finsupp.single_apply_eq_zero]
+  intro hj'
+  exfalso
+  apply hj₂
+  rw [@Subtype.ext_iff]
+  exact id hj'.symm
 
 end Basis
 
