@@ -39,9 +39,9 @@ namespace AugmentationIdeal.Integers
 
 variable (G)
 
-noncomputable def integerAugmentationIdeal : Ideal (MonoidAlgebra ℤ G) := AugmentationIdeal ℤ G
+def integerAugmentationIdeal : Ideal (MonoidAlgebra ℤ G) := AugmentationIdeal ℤ G
 
-def integerAugmentationIdeal' : Ideal (MonoidAlgebra ℤ G) := AugmentationIdeal' ℤ G
+noncomputable def integerAugmentationIdeal' : Ideal (MonoidAlgebra ℤ G) := AugmentationIdeal' ℤ G
 
 variable {G}
 

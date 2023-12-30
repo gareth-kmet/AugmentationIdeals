@@ -48,6 +48,7 @@ This file also does not cover the analagous proofs for `quotPolynomial` the quot
 
 open BigOperators Classical
 
+
 variable (R G : Type*) [CommGroup G] [CommRing R] [NoZeroDivisors R]
 
 def AugmentationIdeal : Ideal (MonoidAlgebra R G) := RingHom.ker (AugmentationIdeal.AugmentationMap (R:=R) (G:=G))

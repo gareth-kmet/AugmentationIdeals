@@ -13,15 +13,11 @@ computable version for generic rings. It also defines a different definition for
 ## Main definitions
 
 * `AugmentationIdeal.AugmentationMap` defines the ring homorphism that sends a `MonoidAlgebra` to the sum of its
-  `R` coefficients. This definition requires that the ring has no zero divisors but _not_ that the ring is communative.
+  `R` coefficients. This definition does _not_ require any additional structure on the ring.
 * `AugmentationIdeal'.AugmentationMap` defines the equivalent noncomputable ring homorphism using `MonoidAlgebra.lift`.
-  This definition requires that the ring is communative but _not_ that it must have no zero divisors
+  This definition requires that the ring is communative.
 * `MonoidAlgebra.mul_def'` gives an alternative definition to the multiplication of `MonoidAlgebra` such that
    `f*g a = ∑ a in G, ∑ h in G, f h * g (h⁻¹ * a)`
-
-## Future work
-
-* remove the `NoZeroDivisors R` variable
 -/
 
 
@@ -65,7 +61,7 @@ namespace MonoidAlgebra
   Some Lemmas about multiplication within MonoidAlgebras
 -/
 
-variable [Group G] [Ring R] [NoZeroDivisors R]-- #TODO reduce
+variable [Group G] [Ring R]
 variable (f g : MonoidAlgebra R G)
 
 lemma mul_def'' : f * g = ∑ a₁ in f.support, ∑ a₂ in g.support, MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂) := by
@@ -73,19 +69,6 @@ lemma mul_def'' : f * g = ∑ a₁ in f.support, ∑ a₂ in g.support, MonoidAl
   dsimp only
 
 namespace mul_def'
-
-lemma single_of_mul_is_non_zero_when_mul_is_single (ha₁ : a₁ ∈ f.support) (ha₂ : a₂ ∈ g.support) : MonoidAlgebra.single (a₁ * a₂) (f a₁ * g a₂) a ≠ 0 ↔ a₁ * a₂ = a := by
-  constructor
-  · intro ha
-    rw [@Finsupp.single_apply_ne_zero] at ha
-    obtain ⟨ha', _⟩ := ha ; exact id ha'.symm
-  · intro ha
-    rw [@Finsupp.single_apply_ne_zero]
-    constructor ; exact id ha.symm
-    suffices f a₁ ≠ 0 ∧ g a₂ ≠ 0 by
-      obtain ⟨hf, hg⟩ := this
-      exact mul_ne_zero hf hg
-    exact ⟨Finsupp.mem_support_iff.mp ha₁, Finsupp.mem_support_iff.mp ha₂⟩
 
 noncomputable def gsupport_finset (a₁ a : G) : Finset G := Finset.subset_to_finset (s:=g.support) (t:={a₂ ∈ g.support | a₁ * a₂ = a}) <| by
   exact Set.sep_subset (fun x => x ∈ g.support.val) fun x => ↑a₁ * x = a
@@ -263,7 +246,7 @@ end MonoidAlgebra
 
 namespace AugmentationIdeal.AugmentationMap
 
-variable [Group G] [Ring R] [NoZeroDivisors R]
+variable [Group G] [Ring R]
 variable (f g : MonoidAlgebra R G)
 
 namespace mulHom
@@ -420,7 +403,7 @@ end AugmentationMap
 
 section definition
 
-variable [Group G] [Ring R] [NoZeroDivisors R]
+variable [Group G] [Ring R]
 
 -- A computable version of `AugmentationIdeal.AugmenationMap`
 def AugmentationMap : (MonoidAlgebra R G) →+* R where
@@ -444,7 +427,7 @@ lemma AugmentationMap.fun_def (f : MonoidAlgebra R G) :
 
 end definition
 
-variable [Group G] [CommRing R] [NoZeroDivisors R]
+variable [Group G] [CommRing R]
 
 lemma AugmentationMap.fun_def' (f : MonoidAlgebra R G) :
     AugmentationMap f = AugmentationIdeal'.AugmentationMap f := by

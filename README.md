@@ -27,7 +27,7 @@ not communative. This choice was made to make some of the proofs easier but also
 
 This project is split into 5 files *AugmentationMap*, *Basic*, *Integer*, *Lemmas* and *IdealNSMul*. 
 * *AugmentationMap* includes theorems and lemmas, alongside the definition, of the `AugmentationMap` for
-    a given group and ring, neither needing to be communative
+    a given group and ring, neither needing additional structure.
 * *Basic* defines the `AugmentationIdeal` for generic communative groups and generic communative rings.
     It also conatins all the theorems and lemmas
 * *Integer* contains some proofs about the quotients of powers of the `AugmentationIdeal` in the case of the integer ring
@@ -80,4 +80,10 @@ This project only encompasses the first section of the first chapter of the four
 Work should also be done to change all current definitions to use non-abelian groups as the result are not dependent on abelianness. 
 
 # Authors
-* Gareth Kmet - 22 Dec 2023
+* Gareth Kmet - 30 Dec 2023
+
+# NOTES
+
+* Submitted on Dec 22nd 2023
+* Updated on Dec 23rd 2023 to remove `CommGroup` and `CommGroup` from the `AugmentationMap`. (This was done in a new commit)
+* Updated on Dec 30th 2023 to remove `NoZeroDivisors` from the `AugmentationMap`. (This was done in a new commit)
